@@ -251,15 +251,15 @@ def _filter_listings_by_constraints(listings, constraints):
                 pass
 
         # Beds filtering - beds is MINIMUM bedrooms (>=)
-        if beds is not None and rooms is not None:
-            try:
-                beds_int = int(beds)
-                rooms_int = int(rooms)
-                if rooms_int < beds_int:
-                    skipped["beds_too_low"].append(f"{property_id}({rooms_int}bed)")
-                    continue
-            except (ValueError, TypeError):
-                pass
+        # if beds is not None and rooms is not None:
+        #     try:
+        #         beds_int = int(beds)
+        #         rooms_int = int(rooms)
+        #         if rooms_int != beds_int:
+        #             skipped["beds_too_low"].append(f"{property_id}({rooms_int}bed)")
+        #             continue
+        #     except (ValueError, TypeError):
+        #         pass
 
         # Purpose filtering
         if purpose and p_purpose:
