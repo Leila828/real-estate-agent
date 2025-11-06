@@ -114,7 +114,7 @@ def search_properties(filters, page=1, limit=50):
 # --- Flask Routes ---
 @app.route("/")
 def home():
-    return render_template("index.html")
+    return render_template("pf_web_test.html")
 
 
 @app.route('/api/search', methods=['GET'])
