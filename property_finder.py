@@ -242,20 +242,50 @@ def fetch_propertyfinder_listings(filters: dict, build_id: str):
 
 
 # ----------------------------------
+# Search with Pagination
+# ----------------------------------
+def search_properties_with_pagination(filters: dict, build_id: str):
+    """
+    Fetches properties page by page.
+    """
+    MAX_PAGES = 10
+    all_listings = []
+
+    for page_num in range(1, MAX_PAGES + 1):
+        print(f"Fetching listings for page {page_num}...")
+        page_filters = filters.copy()
+        page_filters["page"] = page_num
+
+        listings = fetch_propertyfinder_listings(page_filters, build_id)
+
+        if not listings:
+            print(f"No more listings found on page {page_num}. Stopping.")
+            break
+
+        print(f"Found {len(listings)} properties on page {page_num}")
+        all_listings.extend(listings)
+
+    # Remove duplicates
+    seen_ids = set()
+    unique_listings = []
+    for listing in all_listings:
+        listing_id = listing.get('id')
+        if listing_id and listing_id not in seen_ids:
+            unique_listings.append(listing)
+            seen_ids.add(listing_id)
+
+    print(f"Total unique properties found: {len(unique_listings)}")
+    return unique_listings
+
+# ----------------------------------
 # Main Search Function
 # ----------------------------------
 def property_finder_search(search_filters: dict):
     """
-    Main function to execute the full search workflow with keywords
-    and pagination.
+    Main function to execute the full search workflow.
     """
-    print(f"print filters ff {search_filters}")
     inner_filters = search_filters.get('filters', {})
-
-    # Determine location query from inner filters
     query = inner_filters.get("location_query", "dubai")
-    print(f"query of location {query}")
-    print(f"query ff {query}")
     
     locations = search_location(query)
     location_id = None
@@ -263,13 +293,11 @@ def property_finder_search(search_filters: dict):
     try:
         if isinstance(locations, dict):
             data_obj = locations.get("data")
-            # Case 1: data is a list of items with top-level id
             if isinstance(data_obj, list) and data_obj:
                 for item in data_obj:
                     if isinstance(item, dict) and item.get("id"):
                         location_id = item.get("id")
                         break
-            # Case 2: data is a dict with attributes array
             elif isinstance(data_obj, dict):
                 attrs = data_obj.get("attributes")
                 if isinstance(attrs, list) and attrs:
@@ -283,47 +311,10 @@ def property_finder_search(search_filters: dict):
         print(f"Could not find location for query: {query}. Proceeding without location_id.")
     else:
         inner_filters["location_id"] = location_id
-        print(f"Found city ID: {inner_filters['location_id']}")
 
-    # Add the keywords filter if it exists in the parsed inner filters
-    keywords = inner_filters.get("keywords")
-    if keywords:
-        inner_filters["keywords"] = keywords
-
-    # Initialise with the inner filters so purpose/property_type are respected
     build_id = initialise(inner_filters)
     if not build_id:
-        print("Could not get build ID. The website structure may have changed.")
+        print("Could not get build ID.")
         return []
 
-    # --- PAGINATION LOGIC ---
-    MAX_PAGES = 10  # Increased to 10 since we're not filtering by price on API side
-    all_listings = []
-    
-    for page_num in range(1, MAX_PAGES + 1):
-        print(f"Fetching listings for page {page_num}...")
-        # Update the filters with the current page number
-        page_filters = inner_filters.copy()
-        page_filters["page"] = page_num
-        
-        # Fetch using inner filters
-        listings = fetch_propertyfinder_listings(page_filters, build_id)
-        
-        if not listings:
-            print(f"No more listings found on page {page_num}. Stopping.")
-            break
-            
-        print(f"Found {len(listings)} properties on page {page_num}")
-        all_listings.extend(listings)
-
-    # Remove duplicates (if any)
-    seen_ids = set()
-    unique_listings = []
-    for listing in all_listings:
-        listing_id = listing.get('id')
-        if listing_id and listing_id not in seen_ids:
-            unique_listings.append(listing)
-            seen_ids.add(listing_id)
-            
-    print(f"Total unique properties found: {len(unique_listings)}")
-    return unique_listings
+    return search_properties_with_pagination(inner_filters, build_id)
