@@ -94,7 +94,7 @@ def search_properties(filters, page=1, limit=50):
 # --- Flask Routes ---
 @app.route("/")
 def home():
-    return render_template("pf_web_test.html")
+    return "<h1>Property Finder Data API</h1><p>This is a backend utility for fetching data from Property Finder. It is not intended to be a user-facing application.</p>"
 
 
 @app.route('/api/search', methods=['GET'])
