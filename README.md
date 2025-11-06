@@ -28,7 +28,7 @@ ls
 The project relies on several Python packages, including `Flask`, `requests`, and the Google Gemini SDK.
 
 ```bash
-pip install Flask requests google-genai
+pip install Flask requests google.generativeai
 ```
 
 
