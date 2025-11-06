@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Property Finder API Tester</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .test-section {
+            margin-bottom: 40px;
+            border: 2px solid #ecf0f1;
+            border-radius: 10px;
+            padding: 25px;
+            background: #f8f9fa;
+        }
+        
+        .test-section h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+        }
+        
+        .btn-warning {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        }
+        
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            background: #2c3e50;
+            color: #ecf0f1;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status.loading {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        .quick-test {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .quick-btn {
+            padding: 15px;
+            background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+        
+        .quick-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .property-card {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .property-title {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+        
+        .property-details {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+        
+        .property-price {
+            color: #27ae60;
+            font-weight: bold;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 Property Finder API Tester</h1>
+            <p>Test Property Finder API endpoints directly in your browser</p>
+        </div>
+        
+        <div class="content">
+            <!-- Quick Test Buttons -->
+            <div class="test-section">
+                <h2>🚀 Quick Tests</h2>
+                <div class="quick-test">
+                    <button class="quick-btn" onclick="quickTest('locations', 'Victory Heights')">Test Victory Heights</button>
+                    <button class="quick-btn" onclick="quickTest('locations', 'JBR')">Test JBR</button>
+                    <button class="quick-btn" onclick="quickTest('locations', 'Dubai Marina')">Test Dubai Marina</button>
+                    <button class="quick-btn" onclick="quickTest('search', 'villa', 'Victory Heights')">Villa Search</button>
+                    <button class="quick-btn" onclick="quickTest('search', 'apartment', 'Dubai Marina')">Apartment Search</button>
+                    <button class="quick-btn" onclick="quickTest('search', 'villa', 'JBR', 'Carmen')">Carmen Villa JBR</button>
+                </div>
+            </div>
+
+            <!-- Location Search -->
+            <div class="test-section">
+                <h2>📍 Location Search</h2>
+                <div class="form-group">
+                    <label for="locationQuery">Location Query:</label>
+                    <input type="text" id="locationQuery" placeholder="e.g., Victory Heights, JBR, Dubai Marina" value="Victory Heights">
+                </div>
+                <button class="btn" onclick="testLocations()">Search Locations</button>
+                <div id="locationResult" class="result" style="display: none;"></div>
+            </div>
+
+            <!-- Property Search -->
+            <div class="test-section">
+                <h2>🏠 Property Search</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="searchLocation">Location:</label>
+                        <input type="text" id="searchLocation" placeholder="e.g., Victory Heights" value="Victory Heights">
+                    </div>
+                    <div class="form-group">
+                        <label for="propertyType">Property Type:</label>
+                        <select id="propertyType">
+                            <option value="">Any</option>
+                            <option value="villa">Villa</option>
+                            <option value="apartment">Apartment</option>
+                            <option value="townhouse">Townhouse</option>
+                            <option value="penthouse">Penthouse</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="purpose">Purpose:</label>
+                        <select id="purpose">
+                            <option value="sale">Sale</option>
+                            <option value="rent">Rent</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="keywords">Keywords:</label>
+                        <input type="text" id="keywords" placeholder="e.g., Carmen, specific project name">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="minPrice">Min Price (AED):</label>
+                        <input type="number" id="minPrice" placeholder="e.g., 1000000">
+                    </div>
+                    <div class="form-group">
+                        <label for="maxPrice">Max Price (AED):</label>
+                        <input type="number" id="maxPrice" placeholder="e.g., 5000000">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="beds">Bedrooms:</label>
+                        <input type="number" id="beds" placeholder="e.g., 3" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="baths">Bathrooms:</label>
+                        <input type="number" id="baths" placeholder="e.g., 2" min="0">
+                    </div>
+                </div>
+                <button class="btn btn-success" onclick="testSearch()">Search Properties</button>
+                <div id="searchResult" class="result" style="display: none;"></div>
+            </div>
+
+            <!-- AI Chat Interface -->
+            <div class="test-section">
+                <h2>🤖 AI Real Estate Assistant</h2>
+                <p style="margin-bottom: 20px; color: #7f8c8d;">Ask me anything about UAE real estate! I can help you find properties, compare locations, analyze prices, and more.</p>
+                
+                <div class="form-group">
+                    <label for="aiQuery">Your Question:</label>
+                    <textarea id="aiQuery" rows="3" placeholder="e.g., Find me Carmen villas in Victory Heights, Compare prices in Palm Jumeirah vs Dubai Marina, What's the average price of apartments in JBR?" style="resize: vertical;"></textarea>
+                </div>
+                
+                <div class="quick-test" style="margin-bottom: 20px;">
+                    <button class="quick-btn" onclick="askAI('Find me villas in Victory Heights')">Villas in Victory Heights</button>
+                    <button class="quick-btn" onclick="askAI('Show me apartments in Dubai Marina under 3 million')">Dubai Marina Apartments</button>
+                    <button class="quick-btn" onclick="askAI('Compare prices in Palm Jumeirah vs Dubai Marina')">Compare Locations</button>
+                    <button class="quick-btn" onclick="askAI('What is the average price of villas in Arabian Ranches?')">Price Analysis</button>
+                    <button class="quick-btn" onclick="askAI('How many years of work needed to buy a villa in JBR?')">Affordability Check</button>
+                    <button class="quick-btn" onclick="askAI('Tell me about Carmen Villa project')">Carmen Villa Info</button>
+                </div>
+                
+                <div class="form-row" style="margin-bottom: 15px;">
+                    <div class="form-group">
+                        <label for="aiProvider">AI Provider:</label>
+                        <select id="aiProvider">
+                            <option value="gemini">Gemini</option>
+                            <option value="ollama">Ollama</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>&nbsp;</label>
+                        <button class="btn btn-success" onclick="askAI()" style="width: 100%; padding: 15px; font-size: 18px;">
+                            <span id="aiButtonText">Ask AI Assistant</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="aiResult" class="result" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Auto-detect if running from Flask server or file://
+        const API_BASE = window.location.protocol === 'file:' 
+            ? 'http://localhost:5055'
+            : window.location.origin;
+        
+        function showStatus(elementId, type, message) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="status ${type}">${message}</div>`;
+            element.style.display = 'block';
+        }
+        
+        function showResult(elementId, data) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="status success">✅ Success!</div><pre>${JSON.stringify(data, null, 2)}</pre>`;
+            element.style.display = 'block';
+        }
+        
+        function showError(elementId, error) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="status error">❌ Error: ${error}</div>`;
+            element.style.display = 'block';
+        }
+        
+        async function testLocations() {
+            const query = document.getElementById('locationQuery').value;
+            if (!query) {
+                showError('locationResult', 'Please enter a location query');
+                return;
+            }
+            
+            showStatus('locationResult', 'loading', 'Searching locations...');
+            
+            try {
+                const response = await fetch(`${API_BASE}/pf/locations?query=${encodeURIComponent(query)}`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult('locationResult', data);
+                } else {
+                    showError('locationResult', data.error || 'Unknown error');
+                }
+            } catch (error) {
+                showError('locationResult', `Network error: ${error.message}`);
+            }
+        }
+        
+        async function testSearch() {
+            const filters = {
+                location_query: document.getElementById('searchLocation').value,
+                purpose: document.getElementById('purpose').value,
+                property_type: document.getElementById('propertyType').value,
+                keywords: document.getElementById('keywords').value,
+                min_price: document.getElementById('minPrice').value ? parseInt(document.getElementById('minPrice').value) : undefined,
+                max_price: document.getElementById('maxPrice').value ? parseInt(document.getElementById('maxPrice').value) : undefined,
+                beds: document.getElementById('beds').value ? parseInt(document.getElementById('beds').value) : undefined,
+                baths: document.getElementById('baths').value ? parseInt(document.getElementById('baths').value) : undefined,
+                page: 1
+            };
+            
+            // Remove undefined values
+            Object.keys(filters).forEach(key => {
+                if (filters[key] === undefined || filters[key] === '') {
+                    delete filters[key];
+                }
+            });
+            
+            showStatus('searchResult', 'loading', 'Searching properties...');
+            
+            try {
+                const response = await fetch(`${API_BASE}/pf/search`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ filters })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult('searchResult', data);
+                } else {
+                    showError('searchResult', data.error || 'Unknown error');
+                }
+            } catch (error) {
+                showError('searchResult', `Network error: ${error.message}`);
+            }
+        }
+        
+        async function askAI(query = null) {
+            const aiQuery = query || document.getElementById('aiQuery').value.trim();
+            if (!aiQuery) {
+                showError('aiResult', 'Please enter a question or select a quick test');
+                return;
+            }
+            
+            // Update button state
+            const button = document.querySelector('#aiResult').previousElementSibling;
+            const buttonText = document.getElementById('aiButtonText');
+            button.disabled = true;
+            buttonText.textContent = '🤖 AI is thinking...';
+            
+            showStatus('aiResult', 'loading', 'AI Assistant is analyzing your request...');
+            
+            try {
+                const provider = document.getElementById('aiProvider').value;
+                const endpoint = provider === 'gemini' ? '/api/gemini_search' : '/api/intelligent_search';
+                const response = await fetch(`${API_BASE}${endpoint}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ query: aiQuery })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    displayAIResponse(data);
+                } else {
+                    const details = data.details || data.fallback_error || '';
+                    showError('aiResult', (data.error || 'AI Assistant encountered an error') + (details ? `\nDetails: ${details}` : ''));
+                    console.error('AI error:', data);
+                }
+            } catch (error) {
+                showError('aiResult', `Network error: ${error.message}`);
+            } finally {
+                // Reset button state
+                button.disabled = false;
+                buttonText.textContent = 'Ask AI Assistant';
+            }
+        }
+        
+        function displayAIResponse(data) {
+            const element = document.getElementById('aiResult');
+            let html = ``;
+
+            // Prefer result.properties, then result.listings, then top-level listings
+            const result = data?.result || {};
+            let props = [];
+            
+            // Try all possible locations for listings array
+            if (Array.isArray(result.properties) && result.properties.length > 0) {
+                props = result.properties;
+            } else if (Array.isArray(result.listings) && result.listings.length > 0) {
+                props = result.listings;
+            } else if (Array.isArray(data?.listings) && data.listings.length > 0) {
+                props = data.listings;
+            } else if (Array.isArray(data?.data?.listings) && data.data.listings.length > 0) {
+                props = data.data.listings;
+            }
+            
+            // Debug: log what we found
+            console.log('DisplayAIResponse - Props found:', props.length, 'Structure:', {
+                has_result_properties: Array.isArray(result.properties),
+                has_result_listings: Array.isArray(result.listings),
+                has_data_listings: Array.isArray(data?.listings),
+                full_data_keys: Object.keys(data || {})
+            });
+
+            // Show main result if available
+            if (props.length > 0) {
+                html += `<div style="margin: 10px 0 0;">
+                    <h3 style="margin: 0 0 15px 0; color: #2c3e50;">🏠 ${props.length} properties found</h3>
+                    <div style="max-height: 460px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px;">`;
+
+                props.slice(0, 12).forEach(p => {
+                    const image = p.cover_photo_url || (Array.isArray(p.all_image_urls) && p.all_image_urls.length ? p.all_image_urls[0] : null);
+                    const price = p.price ? `AED ${Number(p.price).toLocaleString()}` : 'Price on request';
+                    const rooms = p.rooms != null ? `${p.rooms} BR` : '';
+                    const baths = p.baths != null ? `${p.baths} BA` : '';
+                    const area = p.area ? `${p.area} sqft` : '';
+                    const type = p.purpose ? p.purpose : '';
+                    const metaLine = [type, rooms, baths, area].filter(Boolean).join(' • ');
+                    html += `
+                        <div class="property-card" style="display:flex;flex-direction:column;gap:10px;">
+                            ${image ? `<div style="width:100%;height:160px;overflow:hidden;border-radius:8px;"><img src="${image}" alt="Property" style="width:100%;height:100%;object-fit:cover;"></div>` : ''}
+                            <div class="property-title" style="min-height:40px;">${p.title || (p.location_name || 'Property')}</div>
+                            <div class="property-price">${price}</div>
+                            <div class="property-details">${p.location_name || ''}</div>
+                            ${metaLine ? `<div class="property-details">${metaLine}</div>` : ''}
+                        </div>`;
+                });
+
+                if (props.length > 12) {
+                    html += `<div style="grid-column: 1 / -1; text-align: center; margin: 5px 0; color: #7f8c8d;">
+                        ... and ${props.length - 12} more properties
+                    </div>`;
+                }
+
+                html += `</div></div>`;
+
+            } else {
+                // If filters make result empty but real results exist (suggestions), show a nearby suggestions message
+                let suggestions = [];
+                // Use same extraction logic as above
+                if (Array.isArray(data.unfiltered_listings) && data.unfiltered_listings.length > 0) {
+                    suggestions = data.unfiltered_listings;
+                } else if (Array.isArray(result.suggestions) && result.suggestions.length > 0) {
+                    suggestions = result.suggestions;
+                } else if (Array.isArray(result.listings) && result.listings.length > 0) {
+                    suggestions = result.listings;
+                } else if (Array.isArray(data.listings) && data.listings.length > 0) {
+                    suggestions = data.listings;
+                } else if (Array.isArray(data.data?.listings) && data.data.listings.length > 0) {
+                    suggestions = data.data.listings;
+                }
+
+                if (suggestions.length > 0) {
+                    html += `<div style="margin: 15px 0; padding: 15px; background: #fff3cd; border-radius: 8px; border-left: 4px solid #ffe066; color: #856404;">
+                        <h4 style="margin: 0 0 10px 0; color: #b28500;">No exact match, but here are similar suggestions:</h4>
+                        <div style="max-height: 360px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px;">`;
+                    suggestions.slice(0, 12).forEach(p => {
+                        const image = p.cover_photo_url || (Array.isArray(p.all_image_urls) && p.all_image_urls.length ? p.all_image_urls[0] : null);
+                        const price = p.price ? `AED ${Number(p.price).toLocaleString()}` : 'Price on request';
+                        const rooms = p.rooms != null ? `${p.rooms} BR` : '';
+                        const baths = p.baths != null ? `${p.baths} BA` : '';
+                        const area = p.area ? `${p.area} sqft` : '';
+                        const type = p.purpose ? p.purpose : '';
+                        const metaLine = [type, rooms, baths, area].filter(Boolean).join(' • ');
+                        html += `<div class="property-card" style="display:flex;flex-direction:column;gap:10px;">
+                            ${image ? `<div style="width:100%;height:160px;overflow:hidden;border-radius:8px;"><img src="${image}" alt="Property" style="width:100%;height:100%;object-fit:cover;"></div>` : ''}
+                            <div class="property-title" style="min-height:40px;">${p.title || (p.location_name || 'Property')}</div>
+                            <div class="property-price">${price}</div>
+                            <div class="property-details">${p.location_name || ''}</div>
+                            ${metaLine ? `<div class="property-details">${metaLine}</div>` : ''}
+                        </div>`;
+                    });
+                    html += `</div></div>`;
+                } else {
+                    html += `<div style="margin: 15px 0; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                        <p>We couldn't display a visual result for this query, but the assistant responded successfully.</p>
+                    </div>`;
+                }
+            }
+
+            // Technical details (collapsed)
+            html += `<details style="margin-top: 20px;">
+                <summary style="cursor: pointer; color: #7f8c8d; font-size: 14px;">🔍 Technical details</summary>
+                <pre style="margin-top: 10px; background: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 5px; overflow-x: auto; font-size: 12px;">${JSON.stringify(data, null, 2)}</pre>
+            </details>`;
+
+            element.innerHTML = html;
+            element.style.display = 'block';
+        }
+        
+        function quickTest(type, param1, param2, param3) {
+            if (type === 'locations') {
+                document.getElementById('locationQuery').value = param1;
+                testLocations();
+            } else if (type === 'search') {
+                document.getElementById('searchLocation').value = param2;
+                document.getElementById('propertyType').value = param1;
+                if (param3) {
+                    document.getElementById('keywords').value = param3;
+                }
+                testSearch();
+            }
+        }
+        
+        function renderPropertiesPage() {
+            const state = window._aiState || { allProps: [], shown: 0, pageSize: 12, filters: {} };
+            const grid = document.getElementById('propGrid');
+            const more = document.getElementById('propMore');
+            const countEl = document.getElementById('propCount');
+            if (!grid) return;
+
+            // Apply client-side constraints (hide out-of-range)
+            const { min_price, max_price, beds } = state.filters;
+            const filtered = state.allProps.filter(p => {
+                const priceOk = (max_price ? (p.price == null || p.price <= max_price) : true) &&
+                                (min_price ? (p.price == null || p.price >= min_price) : true);
+                // Treat requested beds as minimum
+                const bedsOk = (beds ? (p.rooms == null || Number(p.rooms) >= Number(beds)) : true);
+                return priceOk && bedsOk;
+            });
+
+            countEl.textContent = `🏠 ${filtered.length} properties found`;
+
+            const start = state.shown;
+            const end = Math.min(start + state.pageSize, filtered.length);
+            const page = filtered.slice(start, end);
+
+            const cards = page.map(p => {
+                const image = p.cover_photo_url || (Array.isArray(p.all_image_urls) && p.all_image_urls.length ? p.all_image_urls[0] : null);
+                const price = p.price ? `AED ${Number(p.price).toLocaleString()}` : 'Price on request';
+                const rooms = p.rooms != null ? `${p.rooms} BR` : '';
+                const baths = p.baths != null ? `${p.baths} BA` : '';
+                const area = p.area ? `${p.area} sqft` : '';
+                const type = p.purpose ? p.purpose : '';
+                const metaLine = [type, rooms, baths, area].filter(Boolean).join(' • ');
+                return `
+                    <div class="property-card" style="display:flex;flex-direction:column;gap:10px;">
+                        ${image ? `<div style="width:100%;height:160px;overflow:hidden;border-radius:8px;"><img src="${image}" alt="Property" style="width:100%;height:100%;object-fit:cover;"></div>` : ''}
+                        <div class="property-title" style="min-height:40px;">${p.title || (p.location_name || 'Property')}</div>
+                        <div class="property-price">${price}</div>
+                        <div class="property-details">${p.location_name || ''}</div>
+                        ${metaLine ? `<div class="property-details">${metaLine}</div>` : ''}
+                    </div>`;
+            }).join('');
+
+            if (start === 0) grid.innerHTML = cards; else grid.insertAdjacentHTML('beforeend', cards);
+            state.shown = end;
+            window._aiState = state;
+
+            if (end < filtered.length) {
+                more.innerHTML = `<button class="btn" onclick="renderPropertiesPage()">Load more</button>`;
+            } else {
+                more.innerHTML = '';
+            }
+        }
+
+        // Note: Do NOT redefine askAI here; use the async askAI(query = null) above
+        
+        // Auto-test on page load
+        window.onload = function() {
+            console.log('Property Finder API Tester loaded');
+            console.log('Make sure pf_debug_api.py is running on http://localhost:5055');
+            
+            // Focus on AI query input
+            document.getElementById('aiQuery').focus();
+        };
+    </script>
+</body>
+</html>
