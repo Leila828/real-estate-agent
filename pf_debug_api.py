@@ -2,7 +2,8 @@ from flask import Flask, request, jsonify, send_from_directory
 import os
 from dotenv import load_dotenv
 
-import property_finder as pf
+#import property_finder as pf
+import property_finder_v2 as pf
 import test_prop as tp
 import google.generativeai as genai
 from googleapiclient.discovery import build
@@ -198,7 +199,7 @@ def property_search_tool(filters: dict):
 
 
 def _filter_listings_by_constraints(listings, constraints):
-    """Apply client-side filtering to enforce min/max price and minimum beds."""
+    """Apply client-side filtering to enforce min/max price and exact bedroom match."""
     if not isinstance(listings, list):
         print("[FILTER] Input is not a list, returning empty")
         return []
@@ -221,7 +222,7 @@ def _filter_listings_by_constraints(listings, constraints):
     skipped = {
         "price_too_low": [],
         "price_too_high": [],
-        "beds_too_low": [],
+        "beds_mismatch": [],
         "purpose_mismatch": [],
         "passed": []
     }
@@ -250,16 +251,16 @@ def _filter_listings_by_constraints(listings, constraints):
             except (ValueError, TypeError):
                 pass
 
-        # Beds filtering - beds is MINIMUM bedrooms (>=)
-        # if beds is not None and rooms is not None:
-        #     try:
-        #         beds_int = int(beds)
-        #         rooms_int = int(rooms)
-        #         if rooms_int != beds_int:
-        #             skipped["beds_too_low"].append(f"{property_id}({rooms_int}bed)")
-        #             continue
-        #     except (ValueError, TypeError):
-        #         pass
+        # CRITICAL FIX: Exact bedroom match (not minimum, EXACT)
+        if beds is not None and rooms is not None:
+            try:
+                beds_int = int(beds)
+                rooms_int = int(rooms)
+                if rooms_int != beds_int:
+                    skipped["beds_mismatch"].append(f"{property_id}({rooms_int}bed)")
+                    continue
+            except (ValueError, TypeError):
+                pass
 
         # Purpose filtering
         if purpose and p_purpose:
@@ -279,8 +280,8 @@ def _filter_listings_by_constraints(listings, constraints):
         print(f"  ❌ Price too low: {len(skipped['price_too_low'])} - {skipped['price_too_low'][:3]}")
     if skipped['price_too_high']:
         print(f"  ❌ Price too high: {len(skipped['price_too_high'])} - {skipped['price_too_high'][:3]}")
-    if skipped['beds_too_low']:
-        print(f"  ❌ Beds too low: {len(skipped['beds_too_low'])} - {skipped['beds_too_low'][:3]}")
+    if skipped['beds_mismatch']:
+        print(f"  ❌ Bedroom mismatch: {len(skipped['beds_mismatch'])} - {skipped['beds_mismatch'][:3]}")
     if skipped['purpose_mismatch']:
         print(f"  ❌ Purpose mismatch: {len(skipped['purpose_mismatch'])} - {skipped['purpose_mismatch'][:3]}")
 

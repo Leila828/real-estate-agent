@@ -5,8 +5,8 @@ from urllib.parse import urlencode
 from flask import Flask, request, jsonify, send_file, abort, render_template
 
 import database
-import property_finder
-
+#import property_finder
+import property_finder_v2 as property_finder
 import sqlite3
 from datetime import datetime, timedelta
 
@@ -23,6 +23,7 @@ with app.app_context():
 
 
 # --- Core Search Logic (Property Finder) ---
+
 def search_properties(filters, page=1, limit=50):
     """
     Fetches property listings using the Property Finder API and caches them.
@@ -32,44 +33,38 @@ def search_properties(filters, page=1, limit=50):
     print(f"{'=' * 80}\n")
 
     # 1. Prepare filters for the cache key.
-    #    Remove empty or invalid filters before creating the cache key string.
-    #    BUT KEEP property_type, beds, purpose, and other important filters
-    cleaned_filters = {k: v for k, v in filters.items() if v and v != ['']}
+    # Remove empty or invalid filters AND page/limit (we cache ALL results, not per-page)
+    cleaned_filters = {k: v for k, v in filters.items()
+                       if v and v != [''] and k not in ['page', 'limit']}
 
-    # 2. Add 'page' and 'limit' to the cache key to ensure unique cache entries for different paginations.
-    cleaned_filters['page'] = page
-    cleaned_filters['limit'] = limit
-
-    # 3. Create a unique query string for caching.
-    #    'doseq=True' is crucial for handling lists like beds=['3', '4'].
+    # 2. Create a unique query string for caching (WITHOUT page/limit)
     sorted_filters = sorted(cleaned_filters.items())
     query_string = urlencode(sorted_filters, doseq=True)
 
     print(f"[SEARCH] Cache key: {query_string}\n")
 
-    # 4. Check the cache.
+    # 3. Check the cache.
     query_id = database.find_cached_query(query_string)
 
     if query_id:
-        print(f"[SEARCH] Cache hit for query: {query_string}")
-        # Retrieve paginated properties from the cache
+        print(f"[SEARCH] ✅ Cache HIT for query: {query_string}")
+        # Retrieve ALL cached properties
         properties_data = database.get_properties_for_query(query_id)
 
-        # Calculate pagination details
+        # Apply pagination on cached data
         total_properties = len(properties_data)
         start = (page - 1) * limit
         end = start + limit
         paginated_properties = properties_data[start:end]
 
-        print(f"[SEARCH] Returning {len(paginated_properties)} cached properties (page {page})\n")
+        print(
+            f"[SEARCH] Returning {len(paginated_properties)} cached properties (page {page} of {total_properties} total)\n")
         return paginated_properties
     else:
-        print(f"[SEARCH] Cache miss for query: {query_string}")
-        print(f"[SEARCH] Fetching live from Property Finder...\n")
+        print(f"[SEARCH] ❌ Cache MISS for query: {query_string}")
+        print(f"[SEARCH] Fetching fresh data from Property Finder API...\n")
 
-        # 5. Fetch live data from Property Finder.
-        # Wrap filters in the expected structure for property_finder_search
-        # Convert 'query' to 'location_query' for Property Finder API
+        # 4. Convert 'query' to 'location_query' for Property Finder API
         if 'query' in cleaned_filters:
             cleaned_filters['location_query'] = cleaned_filters.pop('query')
 
@@ -78,18 +73,22 @@ def search_properties(filters, page=1, limit=50):
         print(f"[SEARCH] Calling property_finder.property_finder_search with: {search_params}\n")
         properties = property_finder.property_finder_search(search_params)
 
-        print(f"[SEARCH] Got {len(properties)} properties from API\n")
+        print(f"[SEARCH] ✅ Got {len(properties)} properties from API\n")
 
         if properties:
-            # 6. Save the live data to the database.
-            print(f"[SEARCH] Saving {len(properties)} properties to cache...\n")
+            # 5. Save ALL properties to cache
+            print(f"[SEARCH] 💾 Saving {len(properties)} properties to cache...\n")
             database.save_query_and_properties(query_string, properties)
+        else:
+            print(f"[SEARCH] ⚠️  No properties returned from API\n")
 
-        # 7. Return ALL properties (not paginated here - let the caller handle pagination)
-        #    This is important for filtering to work correctly
-        print(f"[SEARCH] Returning all {len(properties)} properties\n")
-        return properties
+        # 6. Apply pagination to fresh results
+        start = (page - 1) * limit
+        end = start + limit
+        paginated_properties = properties[start:end]
 
+        print(f"[SEARCH] Returning {len(paginated_properties)} properties (page {page} of {len(properties)} total)\n")
+        return paginated_properties
 
 # --- Flask Routes ---
 @app.route("/")
