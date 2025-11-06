@@ -297,7 +297,7 @@ def property_finder_search(search_filters: dict):
         return []
 
     # --- PAGINATION LOGIC ---
-    MAX_PAGES = 5  # Increased to 5 since we're not filtering by price on API side
+    MAX_PAGES = 10  # Increased to 10 since we're not filtering by price on API side
     all_listings = []
     
     for page_num in range(1, MAX_PAGES + 1):

@@ -85,8 +85,28 @@ def search_properties(filters, page=1, limit=50):
             print(f"[SEARCH] Saving {len(properties)} properties to cache...\n")
             database.save_query_and_properties(query_string, properties)
 
-        # 7. Return ALL properties (not paginated here - let the caller handle pagination)
-        #    This is important for filtering to work correctly
+        # 7. Apply client-side filtering for price
+        min_price = cleaned_filters.get('min_price')
+        max_price = cleaned_filters.get('max_price')
+
+        if min_price is not None or max_price is not None:
+            print(f"[SEARCH] Applying client-side price filter (min: {min_price}, max: {max_price})...")
+            filtered_properties = []
+            for prop in properties:
+                price = prop.get('price')
+                if price is not None:
+                    # Check against min_price
+                    if min_price is not None and price < min_price:
+                        continue
+                    # Check against max_price
+                    if max_price is not None and price > max_price:
+                        continue
+                    filtered_properties.append(prop)
+
+            print(f"[SEARCH] Filtered properties count: {len(filtered_properties)}\n")
+            properties = filtered_properties
+
+        # 8. Return ALL filtered properties (not paginated here - let the caller handle pagination)
         print(f"[SEARCH] Returning all {len(properties)} properties\n")
         return properties
 
