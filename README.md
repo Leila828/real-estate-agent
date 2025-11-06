@@ -51,6 +51,11 @@ export GEMINI_API_KEY="YOUR_GEMINI_API_KEY_HERE"
 ```
 
 *(Optional: If you are using the `google_search_tool` in `pf_debug_api.py`, you will also need to set `GOOGLE_SEARCH_API_KEY` and `GOOGLE_CSE_ID`.)*
+*Where to get these keys:*
+
+*GEMINI_API_KEY: Get from https://ai.google.dev/*
+*GOOGLE_SEARCH_API_KEY: Get from https://console.cloud.google.com/*
+*GOOGLE_CSE_ID: Get from https://programmablesearchengine.google.com/*
 
 ## 4. Execution
 
