@@ -31,7 +31,7 @@ The project relies on several Python packages, including `Flask`, `requests`, an
 pip install Flask requests google-genai
 ```
 
-*(Note: The `database.py` file is assumed to exist and contain the necessary SQLite functions for caching, as referenced in `test_prop.py` and `comprehensive_debug.py`.)*
+
 
 ## 3. API Key Configuration
 
