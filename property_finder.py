@@ -163,7 +163,7 @@ def search_location(query: str, limit: int = 20):
 
 
 # ----------------------------------
-# Fetch Listings (PRICE FILTERS REMOVED FROM API)
+# Fetch Listings (WITH PROPER BEDS FILTER)
 # ----------------------------------
 def fetch_propertyfinder_listings(filters: dict, build_id: str):
     """
@@ -182,30 +182,46 @@ def fetch_propertyfinder_listings(filters: dict, build_id: str):
 
     for key, value in filters.items():
         print(f"[DEBUG] Processing filter: {key} = {value}")
-        
+
         if key == "property_type":
             pt_id = PROPERTY_TYPE_MAP.get(value.lower())
             if pt_id:
                 api_params["t"] = pt_id
                 print(f"  ✅ Set property_type: {pt_id}")
-        
+
         elif key == "purpose":
             api_params["c"] = "1" if value == "sale" else "2"
             print(f"  ✅ Set purpose: {api_params['c']}")
-        
+
         elif key == "page":
             api_params["page[number]"] = value
             print(f"  ✅ Set page: {value}")
-        
+
         elif key == "location_id":
-            api_params["l"] = value
-            print(f"  ✅ Set location_id: {value}")
-        
+            # Don't send location_id if it's None
+            if value is not None:
+                api_params["l"] = value
+                print(f"  ✅ Set location_id: {value}")
+            else:
+                print(f"  ⚠️  Skipping location_id (value is None)")
+
+        # CRITICAL FIX: Handle beds filter properly
+        elif key == "beds":
+            if value:
+                # Convert to string if it's an integer
+                beds_value = str(value) if isinstance(value, int) else value
+                # Handle both single value and list
+                if isinstance(beds_value, list):
+                    api_params["filter[number_of_bedrooms]"] = ','.join(str(v) for v in beds_value)
+                else:
+                    api_params["filter[number_of_bedrooms]"] = str(beds_value)
+                print(f"  ✅ Set beds filter: {api_params['filter[number_of_bedrooms]']}")
+
         # SKIP price filters - they don't work on API side
         elif key == "min_price" or key == "max_price":
-            print(f"  ⏭️  SKIPPING {key} (will be filtered client-side)")
+            print(f"  ⚠️  SKIPPING {key} (will be filtered client-side)")
             continue
-        
+
         # Handle all other filter keys using FILTERS_MAP
         else:
             api_key = FILTERS_MAP.get(key)
@@ -227,8 +243,27 @@ def fetch_propertyfinder_listings(filters: dict, build_id: str):
         print(f"❌ Error fetching data from Property Finder API: {e}")
         return []
 
-    listings = data.get("pageProps", {}).get("searchResult", {}).get("listings", [])
-    print(f"[DEBUG] API returned {len(listings)} listings")
+    # Debug: Check the actual API response structure
+    page_props = data.get("pageProps", {})
+    search_result = page_props.get("searchResult", {})
+    listings = search_result.get("listings", [])
+
+    # Get pagination info from API - handle both dict and int for page
+    meta = search_result.get("meta", {})
+    total_count = meta.get("total", 0)
+
+    # CRITICAL FIX: Handle page being either int or dict
+    page_info = meta.get("page", 1)
+    if isinstance(page_info, dict):
+        current_page = page_info.get("number", 1)
+    else:
+        current_page = page_info
+
+    print(f"[DEBUG] API Response:")
+    print(f"  - Total properties available: {total_count}")
+    print(f"  - Current page: {current_page}")
+    print(f"  - Listings on this page: {len(listings)}")
+    print()
 
     mapped_results = []
     for r in listings:
@@ -247,23 +282,41 @@ def fetch_propertyfinder_listings(filters: dict, build_id: str):
 def search_properties_with_pagination(filters: dict, build_id: str):
     """
     Fetches properties page by page.
+    PropertyFinder typically shows 25 properties per page, but sometimes less.
+    We'll fetch multiple pages to ensure we get all results.
     """
-    MAX_PAGES = 10
+    MAX_PAGES = 20  # Increased to ensure we get all results
     all_listings = []
+    consecutive_empty_pages = 0
+    MAX_EMPTY_PAGES = 3  # Stop after 3 consecutive empty pages
 
     for page_num in range(1, MAX_PAGES + 1):
-        print(f"Fetching listings for page {page_num}...")
+        print(f"\n{'=' * 60}")
+        print(f"📄 Fetching page {page_num}...")
+        print(f"{'=' * 60}")
+
         page_filters = filters.copy()
         page_filters["page"] = page_num
 
         listings = fetch_propertyfinder_listings(page_filters, build_id)
 
         if not listings:
-            print(f"No more listings found on page {page_num}. Stopping.")
-            break
+            consecutive_empty_pages += 1
+            print(f"⚠️  Empty page {page_num} (consecutive empty: {consecutive_empty_pages})")
 
-        print(f"Found {len(listings)} properties on page {page_num}")
+            if consecutive_empty_pages >= MAX_EMPTY_PAGES:
+                print(f"🛑 Stopping: {MAX_EMPTY_PAGES} consecutive empty pages")
+                break
+            continue
+        else:
+            consecutive_empty_pages = 0  # Reset counter
+
+        print(f"✅ Found {len(listings)} properties on page {page_num}")
         all_listings.extend(listings)
+
+        # If we got less than 25 properties, likely the last page
+        if len(listings) < 25:
+            print(f"📌 Got {len(listings)} properties (less than 25), likely last page")
 
     # Remove duplicates
     seen_ids = set()
@@ -274,8 +327,11 @@ def search_properties_with_pagination(filters: dict, build_id: str):
             unique_listings.append(listing)
             seen_ids.add(listing_id)
 
-    print(f"Total unique properties found: {len(unique_listings)}")
+    print(f"\n{'=' * 60}")
+    print(f"🎯 FINAL RESULT: {len(unique_listings)} unique properties found")
+    print(f"{'=' * 60}\n")
     return unique_listings
+
 
 # ----------------------------------
 # Main Search Function
@@ -286,24 +342,29 @@ def property_finder_search(search_filters: dict):
     """
     inner_filters = search_filters.get('filters', {})
     query = inner_filters.get("location_query", "dubai")
-    
+
     locations = search_location(query)
     location_id = None
-    
+
     try:
         if isinstance(locations, dict):
             data_obj = locations.get("data")
-            if isinstance(data_obj, list) and data_obj:
-                for item in data_obj:
-                    if isinstance(item, dict) and item.get("id"):
-                        location_id = item.get("id")
-                        break
-            elif isinstance(data_obj, dict):
-                attrs = data_obj.get("attributes")
+
+            # Handle the actual API structure: data.attributes is a list
+            if isinstance(data_obj, dict):
+                attrs = data_obj.get("attributes", [])
                 if isinstance(attrs, list) and attrs:
-                    first_attr = attrs[0]
-                    if isinstance(first_attr, dict) and first_attr.get("id"):
-                        location_id = first_attr.get("id")
+                    # Get the first location from attributes list
+                    first_location = attrs[0]
+                    location_id = first_location.get("id")
+                    location_name = first_location.get("name")
+                    print(f"✅ Found location: {location_name} (ID: {location_id})")
+            elif isinstance(data_obj, list) and data_obj:
+                # Fallback: if data is a list directly
+                location_id = data_obj[0].get("id")
+                location_name = data_obj[0].get("name")
+                print(f"✅ Found location: {location_name} (ID: {location_id})")
+
     except Exception as e:
         print(f"Location parse error: {e}")
 
