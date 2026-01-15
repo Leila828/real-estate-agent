@@ -219,86 +219,6 @@
         </div>
         
         <div class="content">
-            <!-- Quick Test Buttons -->
-            <div class="test-section">
-                <h2>🚀 Quick Tests</h2>
-                <div class="quick-test">
-                    <button class="quick-btn" onclick="quickTest('locations', 'Victory Heights')">Test Victory Heights</button>
-                    <button class="quick-btn" onclick="quickTest('locations', 'JBR')">Test JBR</button>
-                    <button class="quick-btn" onclick="quickTest('locations', 'Dubai Marina')">Test Dubai Marina</button>
-                    <button class="quick-btn" onclick="quickTest('search', 'villa', 'Victory Heights')">Villa Search</button>
-                    <button class="quick-btn" onclick="quickTest('search', 'apartment', 'Dubai Marina')">Apartment Search</button>
-                    <button class="quick-btn" onclick="quickTest('search', 'villa', 'JBR', 'Carmen')">Carmen Villa JBR</button>
-                </div>
-            </div>
-
-            <!-- Location Search -->
-            <div class="test-section">
-                <h2>📍 Location Search</h2>
-                <div class="form-group">
-                    <label for="locationQuery">Location Query:</label>
-                    <input type="text" id="locationQuery" placeholder="e.g., Victory Heights, JBR, Dubai Marina" value="Victory Heights">
-                </div>
-                <button class="btn" onclick="testLocations()">Search Locations</button>
-                <div id="locationResult" class="result" style="display: none;"></div>
-            </div>
-
-            <!-- Property Search -->
-            <div class="test-section">
-                <h2>🏠 Property Search</h2>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="searchLocation">Location:</label>
-                        <input type="text" id="searchLocation" placeholder="e.g., Victory Heights" value="Victory Heights">
-                    </div>
-                    <div class="form-group">
-                        <label for="propertyType">Property Type:</label>
-                        <select id="propertyType">
-                            <option value="">Any</option>
-                            <option value="villa">Villa</option>
-                            <option value="apartment">Apartment</option>
-                            <option value="townhouse">Townhouse</option>
-                            <option value="penthouse">Penthouse</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="purpose">Purpose:</label>
-                        <select id="purpose">
-                            <option value="sale">Sale</option>
-                            <option value="rent">Rent</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="keywords">Keywords:</label>
-                        <input type="text" id="keywords" placeholder="e.g., Carmen, specific project name">
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="minPrice">Min Price (AED):</label>
-                        <input type="number" id="minPrice" placeholder="e.g., 1000000">
-                    </div>
-                    <div class="form-group">
-                        <label for="maxPrice">Max Price (AED):</label>
-                        <input type="number" id="maxPrice" placeholder="e.g., 5000000">
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="beds">Bedrooms:</label>
-                        <input type="number" id="beds" placeholder="e.g., 3" min="0">
-                    </div>
-                    <div class="form-group">
-                        <label for="baths">Bathrooms:</label>
-                        <input type="number" id="baths" placeholder="e.g., 2" min="0">
-                    </div>
-                </div>
-                <button class="btn btn-success" onclick="testSearch()">Search Properties</button>
-                <div id="searchResult" class="result" style="display: none;"></div>
-            </div>
-
             <!-- AI Chat Interface -->
             <div class="test-section">
                 <h2>🤖 PropAI Tech</h2>
@@ -328,7 +248,7 @@
                     </div>
                     <div class="form-group">
                         <label>&nbsp;</label>
-                        <button class="btn btn-success" onclick="askAI()" style="width: 100%; padding: 15px; font-size: 18px;">
+                        <button id="aiButton" class="btn btn-success" onclick="askAI()" style="width: 100%; padding: 15px; font-size: 18px;">
                             <span id="aiButtonText">Ask AI Assistant</span>
                         </button>
                     </div>
@@ -363,72 +283,6 @@
             element.style.display = 'block';
         }
         
-        async function testLocations() {
-            const query = document.getElementById('locationQuery').value;
-            if (!query) {
-                showError('locationResult', 'Please enter a location query');
-                return;
-            }
-            
-            showStatus('locationResult', 'loading', 'Searching locations...');
-            
-            try {
-                const response = await fetch(`${API_BASE}/pf/locations?query=${encodeURIComponent(query)}`);
-                const data = await response.json();
-                
-                if (response.ok) {
-                    showResult('locationResult', data);
-                } else {
-                    showError('locationResult', data.error || 'Unknown error');
-                }
-            } catch (error) {
-                showError('locationResult', `Network error: ${error.message}`);
-            }
-        }
-        
-        async function testSearch() {
-            const filters = {
-                location_query: document.getElementById('searchLocation').value,
-                purpose: document.getElementById('purpose').value,
-                property_type: document.getElementById('propertyType').value,
-                keywords: document.getElementById('keywords').value,
-                min_price: document.getElementById('minPrice').value ? parseInt(document.getElementById('minPrice').value) : undefined,
-                max_price: document.getElementById('maxPrice').value ? parseInt(document.getElementById('maxPrice').value) : undefined,
-                beds: document.getElementById('beds').value ? parseInt(document.getElementById('beds').value) : undefined,
-                baths: document.getElementById('baths').value ? parseInt(document.getElementById('baths').value) : undefined,
-                page: 1
-            };
-            
-            // Remove undefined values
-            Object.keys(filters).forEach(key => {
-                if (filters[key] === undefined || filters[key] === '') {
-                    delete filters[key];
-                }
-            });
-            
-            showStatus('searchResult', 'loading', 'Searching properties...');
-            
-            try {
-                const response = await fetch(`${API_BASE}/pf/search`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ filters })
-                });
-                
-                const data = await response.json();
-                
-                if (response.ok) {
-                    showResult('searchResult', data);
-                } else {
-                    showError('searchResult', data.error || 'Unknown error');
-                }
-            } catch (error) {
-                showError('searchResult', `Network error: ${error.message}`);
-            }
-        }
-        
         async function askAI(query = null) {
             const aiQuery = query || document.getElementById('aiQuery').value.trim();
             if (!aiQuery) {
@@ -437,7 +291,7 @@
             }
             
             // Update button state
-            const button = document.querySelector('#aiResult').previousElementSibling;
+            const button = document.getElementById('aiButton');
             const buttonText = document.getElementById('aiButtonText');
             button.disabled = true;
             buttonText.textContent = '🤖 AI is thinking...';
@@ -584,20 +438,6 @@
 
             element.innerHTML = html;
             element.style.display = 'block';
-        }
-        
-        function quickTest(type, param1, param2, param3) {
-            if (type === 'locations') {
-                document.getElementById('locationQuery').value = param1;
-                testLocations();
-            } else if (type === 'search') {
-                document.getElementById('searchLocation').value = param2;
-                document.getElementById('propertyType').value = param1;
-                if (param3) {
-                    document.getElementById('keywords').value = param3;
-                }
-                testSearch();
-            }
         }
         
         function renderPropertiesPage() {
