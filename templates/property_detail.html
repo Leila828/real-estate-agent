@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Property List</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            background-color: #121212;
+            color: #e0e0e0;
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+        }
+        h1 {
+            text-align: center;
+            color: #ffffff;
+        }
+        .property-card {
+            background-color: #1e1e1e;
+            border: 1px solid #333;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            cursor: pointer; /* Add cursor pointer to indicate it's clickable */
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .property-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+        .property-card h2 {
+            color: #4fc3f7;
+            margin-top: 0;
+        }
+        .property-card p {
+            margin: 6px 0;
+            font-size: 0.95em;
+        }
+        .property-card .price {
+            color: #66bb6a;
+            font-weight: bold;
+        }
+        .property-card a {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 8px 12px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        .property-card a:hover {
+            background-color: #0056b3;
+        }
+
+        /* --- Modal/Popup Styling --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            visibility: hidden;
+            opacity: 0;
+            transition: visibility 0s, opacity 0.3s;
+        }
+        .modal-overlay.active {
+            visibility: visible;
+            opacity: 1;
+        }
+        .modal-content {
+            background-color: #1e1e1e;
+            color: #e0e0e0;
+            padding: 25px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 700px;
+            max-height: 90%;
+            overflow-y: auto;
+            position: relative;
+            transform: translateY(-20px);
+            transition: transform 0.3s;
+        }
+        .modal-overlay.active .modal-content {
+            transform: translateY(0);
+        }
+        .modal-close {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 2em;
+            color: #888;
+            cursor: pointer;
+        }
+        .modal-close:hover {
+            color: #fff;
+        }
+        .modal-content h2 {
+            color: #4fc3f7;
+            margin-top: 0;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+        }
+        .modal-price {
+            color: #66bb6a;
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+        .modal-image-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .modal-image-gallery img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>List of Properties</h1>
+    {% if properties %}
+        {% for prop in properties %}
+        <div class="property-card" data-id="{{ prop.id }}">
+            <img src="{{ prop.cover_photo_url or '/static/no-image.png' }}" alt="Cover Image" style="width:100%; max-height:300px; object-fit:cover; border-radius:6px; margin-bottom:10px;">
+            <h2>{{ prop.title or 'No Title' }}</h2>
+            <p class="price">Price: AED {{ "{:,.0f}".format(prop.price) if prop.price else 'N/A' }}</p>
+            <p>Area: {{ prop.area or 'N/A' }} sqft</p>
+            <p>Rooms: {{ prop.rooms or 'N/A' }} | Baths: {{ prop.baths or 'N/A' }}</p>
+            <p>Location: {{ prop.location_name or 'N/A' }}</p>
+            <p>Purpose: {{ prop.purpose or 'N/A' }}</p>
+            <p>Agency: {{ prop.agency_name or 'N/A' }}</p>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p style="text-align: center; padding: 20px;">No properties found for this search.</p>
+    {% endif %}
+    <a href="/" style="display:block; text-align:center; margin-top:20px; color:#fff;">← Back to Search</a>
+</div>
+
+<div id="propertyModal" class="modal-overlay">
+    <div class="modal-content">
+        <span class="modal-close">&times;</span>
+        <div id="modal-details">
+            </div>
+    </div>
+</div>
+
+<script>
+    const modal = document.getElementById('propertyModal');
+    const modalDetails = document.getElementById('modal-details');
+    const propertyCards = document.querySelectorAll('.property-card');
+
+    propertyCards.forEach(card => {
+        card.addEventListener('click', async function() {
+            const propertyId = this.dataset.id;
+            modalDetails.innerHTML = '<p>Loading details...</p>';
+            modal.classList.add('active');
+
+            try {
+                const response = await fetch(`/api/properties/${propertyId}`);
+                if (!response.ok) {
+                    throw new Error('Property not found.');
+                }
+                const property = await response.json();
+                renderModalDetails(property);
+            } catch (error) {
+                modalDetails.innerHTML = `<p style="color: #ff6b6b;">Error: ${error.message}</p>`;
+            }
+        });
+    });
+
+    // Close modal event listeners
+    document.querySelector('.modal-close').addEventListener('click', () => {
+        modal.classList.remove('active');
+    });
+    window.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.classList.remove('active');
+        }
+    });
+
+    function renderModalDetails(prop) {
+        const imageGalleryHTML = prop.all_image_urls?.map(url => `
+            <img src="/get_image?url=${encodeURIComponent(url)}" alt="Property Image">
+        `).join('') || '';
+
+        modalDetails.innerHTML = `
+            <h2>${prop.title || 'No Title'}</h2>
+            <p class="modal-price">Price: AED ${prop.price?.toLocaleString() || 'N/A'}</p>
+            <p>Area: ${prop.area || 'N/A'} sqft</p>
+            <p>Rooms: ${prop.rooms ?? 'N/A'} | Baths: ${prop.baths ?? 'N/A'}</p>
+            <p>Location: ${prop.location_name || 'N/A'}</p>
+            <p>Purpose: ${prop.purpose || 'N/A'}</p>
+            <p>Agency: ${prop.agency_name || 'N/A'}</p>
+            <p>Contact: ${prop.contact_name || 'N/A'}</p>
+            <div class="modal-image-gallery">${imageGalleryHTML}</div>
+        `;
+    }
+</script>
+</body>
+</html>

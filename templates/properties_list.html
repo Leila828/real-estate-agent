@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Property List</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1 { color: #333; text-align: center; }
+        .property-card {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            background-color: #fff;
+        }
+        .property-card h2 { margin-top: 0; color: #007bff; font-size: 1.2em; }
+        .property-card p { margin: 5px 0; font-size: 0.9em; }
+        .property-card .price { font-weight: bold; color: #28a745; }
+        .property-card .location { color: #666; }
+        .property-card a {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 8px 15px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background-color 0.2s;
+        }
+        .property-card a:hover { background-color: #0056b3; }
+        .pagination { text-align: center; margin-top: 20px; }
+        .pagination a {
+            display: inline-block;
+            padding: 8px 12px;
+            margin: 0 5px;
+            border: 1px solid #007bff;
+            border-radius: 5px;
+            text-decoration: none;
+            color: #007bff;
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .pagination a.active {
+            background-color: #007bff;
+            color: white;
+        }
+        .pagination a:hover:not(.active) {
+            background-color: #e9f5ff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>All Properties (Page {{ page }} of {{ total_pages }})</h1>
+        <p style="text-align: center; color: #555;">Total Properties: {{ total_properties }}</p>
+
+        {% if properties %}
+            {% for property in properties %}
+                <div class="property-card">
+                    <h2>{{ property.title }}</h2>
+                    <p class="price">Price: AED {{ "{:,.0f}".format(property.price) if property.price else 'N/A' }}</p>
+                    <p>Area: {{ property.area }} sqft</p>
+                    <p>Rooms: {{ property.rooms if property.rooms is not none else 'N/A' }} | Baths: {{ property.baths if property.baths is not none else 'N/A' }}</p>
+                    <p class="location">Location: {{ property.location_name if property.location_name else 'N/A' }}</p>
+                    <p>Purpose: {{ property.purpose | capitalize }}</p>
+                    <p>Agency: {{ property.agency_name if property.agency_name else 'N/A' }}</p>
+                    <p>Contact: {{ property.contact_name if property.contact_name else 'N/A' }}</p>
+                    <a href="{{ url_for('property_detail', property_id=property.id) }}">View Details</a>
+                </div>
+            {% endfor %}
+
+            <div class="pagination">
+                {% if page > 1 %}
+                    <a href="{{ url_for(current_url, page=page-1, limit=request.args.get('limit', 20)) }}">Previous</a>
+                {% endif %}
+
+                {# Render a few page links around the current page #}
+                {% set start_page = (page - 2) if (page - 2) > 0 else 1 %}
+                {% set end_page = (page + 2) if (page + 2) <= total_pages else total_pages %}
+
+                {% if start_page > 1 %}
+                    <a href="{{ url_for(current_url, page=1, limit=request.args.get('limit', 20)) }}">1</a>
+                    {% if start_page > 2 %}<span class="pagination-ellipsis">...</span>{% endif %}
+                {% endif %}
+
+                {% for p in range(start_page, end_page + 1) %}
+                    <a href="{{ url_for(current_url, page=p, limit=request.args.get('limit', 20)) }}" class="{{ 'active' if p == page }}">
+                        {{ p }}
+                    </a>
+                {% endfor %}
+
+                {% if end_page < total_pages %}
+                    {% if end_page < total_pages - 1 %}<span class="pagination-ellipsis">...</span>{% endif %}
+                    <a href="{{ url_for(current_url, page=total_pages, limit=request.args.get('limit', 20)) }}">{{ total_pages }}</a>
+                {% endif %}
+
+                {% if page < total_pages %}
+                    <a href="{{ url_for(current_url, page=page+1, limit=request.args.get('limit', 20)) }}">Next</a>
+                {% endif %}
+            </div>
+
+        {% else %}
+            <p style="text-align: center; color: #666; padding: 20px;">No properties available.</p>
+        {% endif %}
+    </div>
+</body>
+</html>

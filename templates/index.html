@@ -1,0 +1,1544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PropAI - Intelligent Real Estate Platform</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* CSS Variables for consistent theming */
+        :root {
+            --primary-color: #2563eb;
+            --primary-dark: #1d4ed8;
+            --secondary-color: #f59e0b;
+            --accent-color: #10b981;
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --text-light: #9ca3af;
+            --bg-primary: #ffffff;
+            --bg-secondary: #f9fafb;
+            --bg-accent: #f3f4f6;
+            --border-color: #e5e7eb;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+            --radius-sm: 0.375rem;
+            --radius-md: 0.5rem;
+            --radius-lg: 0.75rem;
+            --radius-xl: 1rem;
+        }
+
+        /* Reset and Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header */
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .logo i {
+            font-size: 2rem;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text-secondary);
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary-color);
+        }
+
+        /* Hero Section */
+        .hero {
+            text-align: center;
+            padding: 4rem 0 3rem;
+            color: white;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Search Section */
+        .search-section {
+            background: var(--bg-primary);
+            border-radius: var(--radius-xl);
+            padding: 2rem;
+            margin: 2rem 0;
+            box-shadow: var(--shadow-xl);
+            border: 1px solid var(--border-color);
+        }
+
+        .search-form {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .search-input {
+            flex: 1;
+            min-width: 300px;
+            padding: 1rem 1.5rem;
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            font-size: 1rem;
+            transition: all 0.2s;
+            background: var(--bg-primary);
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .search-btn {
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: white;
+            border: none;
+            border-radius: var(--radius-lg);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .search-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .search-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Quick Actions */
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .quick-action {
+            padding: 1rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            color: var(--text-primary);
+        }
+
+        .quick-action:hover {
+            background: var(--bg-accent);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .quick-action i {
+            font-size: 1.5rem;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .quick-action span {
+            display: block;
+            font-weight: 500;
+        }
+        /* Search Form */
+        form {
+            margin-bottom: 30px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        input[type="text"] {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            background-color: #1e1e1e;
+            color: #fff;
+            width: 100%;
+        }
+        button {
+            padding: 12px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        /* Results Section */
+        .results-section {
+            background: var(--bg-primary);
+            border-radius: var(--radius-xl);
+            padding: 2rem;
+            margin: 2rem 0;
+            box-shadow: var(--shadow-xl);
+            border: 1px solid var(--border-color);
+            min-height: 200px;
+        }
+
+        /* Property Cards */
+        .property-card {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            margin-bottom: 2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .property-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-xl);
+            border-color: var(--primary-color);
+        }
+
+        .property-image {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+            background: var(--bg-accent);
+        }
+
+        .property-content {
+            padding: 1.5rem;
+        }
+
+        .property-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.75rem;
+            line-height: 1.4;
+        }
+
+        .property-price {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-color);
+            margin-bottom: 1rem;
+        }
+
+        .property-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .property-detail {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .property-detail i {
+            color: var(--primary-color);
+            width: 16px;
+        }
+
+        .property-location {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .property-agency {
+            color: var(--text-light);
+            font-size: 0.85rem;
+        }
+
+        .property-badge {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: var(--primary-color);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        /* AI Response Cards */
+        .ai-response {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: white;
+            padding: 2rem;
+            border-radius: var(--radius-lg);
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .ai-response h3 {
+            margin: 0 0 1rem 0;
+            font-size: 1.5rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .ai-response h3 i {
+            font-size: 1.25rem;
+        }
+
+        .ai-response p {
+            margin: 0.5rem 0;
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+
+        .ai-response ul, .ai-response ol {
+            margin: 1rem 0;
+            padding-left: 1.5rem;
+        }
+
+        .ai-response li {
+            margin: 0.5rem 0;
+        }
+
+        /* Analysis Cards */
+        .analysis-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1.5rem;
+            border-radius: var(--radius-md);
+            margin: 1rem 0;
+            backdrop-filter: blur(10px);
+        }
+
+        .analysis-card h4 {
+            margin: 0 0 1rem 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .insight-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: var(--radius-sm);
+            margin: 0.5rem 0;
+            border-left: 3px solid rgba(255, 255, 255, 0.3);
+        }
+
+        /* Loading State */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem;
+            color: var(--text-secondary);
+        }
+
+        .loading i {
+            font-size: 2rem;
+            animation: spin 1s linear infinite;
+            margin-right: 1rem;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-secondary);
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            color: var(--text-light);
+            margin-bottom: 1rem;
+        }
+
+        .empty-state h3 {
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+        /* Modals */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            visibility: hidden;
+            opacity: 0;
+            transition: visibility 0s, opacity 0.3s;
+        }
+        .modal-overlay.active {
+            visibility: visible;
+            opacity: 1;
+        }
+        .modal-content {
+            background-color: #1e1e1e;
+            color: #e0e0e0;
+            padding: 25px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 700px;
+            max-height: 90%;
+            overflow-y: auto;
+            position: relative;
+            transform: translateY(-20px);
+            transition: transform 0.3s;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+        }
+        .modal-overlay.active .modal-content {
+            transform: translateY(0);
+        }
+        .modal-close {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 2em;
+            color: #888;
+            cursor: pointer;
+        }
+        .modal-close:hover {
+            color: #fff;
+        }
+        .modal-content h2 {
+            color: #4fc3f7;
+            margin-top: 0;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+        }
+        .modal-main-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .modal-price {
+            color: #66bb6a;
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+        .modal-location {
+            color: #bdbdbd;
+            font-size: 1em;
+        }
+        .modal-cover-image {
+            width: 100%;
+            height: 350px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            cursor: zoom-in;
+        }
+        .modal-details-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .modal-detail-item {
+            background-color: #2e2e2e;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        .modal-detail-item strong {
+            color: #888;
+            display: block;
+            font-size: 0.85em;
+            margin-bottom: 5px;
+        }
+        .modal-detail-item span {
+            font-size: 1em;
+            color: #fff;
+        }
+        .modal-contact-section {
+            background-color: #2e2e2e;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: space-between;
+        }
+        .modal-contact-section h3 {
+            color: #4fc3f7;
+            margin-top: 0;
+        }
+        .modal-contact-item p {
+            margin: 5px 0;
+        }
+        .modal-contact-item strong {
+            color: #888;
+            display: block;
+        }
+        #popup-map {
+            height: 300px;
+            width: 100%;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            background-color: #333;
+        }
+        .location-button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 15px;
+            font-size: 0.9em;
+            display: block;
+            width: 100%;
+            text-align: center;
+        }
+        /* Fullscreen Gallery Modal */
+        #galleryModal {
+            background-color: black;
+            z-index: 1001;
+            flex-direction: column;
+            cursor: zoom-out;
+        }
+        #galleryModal img {
+            max-width: 95%;
+            max-height: 95%;
+            object-fit: contain;
+            cursor: default;
+        }
+        #galleryClose {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            color: white;
+            font-size: 3em;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 1002;
+            text-shadow: 0 0 5px black;
+        }
+        #galleryNavigation {
+            position: absolute;
+            top: 50%;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            transform: translateY(-50%);
+            padding: 0 20px;
+            box-sizing: border-box;
+        }
+        .gallery-nav-btn {
+            background: rgba(0,0,0,0.5);
+            color: white;
+            border: none;
+            font-size: 3em;
+            cursor: pointer;
+            padding: 10px;
+            border-radius: 50%;
+        }
+        .gallery-nav-btn:hover {
+            background: rgba(0,0,0,0.8);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 15px;
+            }
+
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .nav-links {
+                gap: 1rem;
+            }
+
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .hero p {
+                font-size: 1.1rem;
+            }
+
+            .search-form {
+                flex-direction: column;
+            }
+
+            .search-input {
+                min-width: auto;
+            }
+
+            .quick-actions {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .property-details {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .modal-content {
+                width: 95%;
+                padding: 1.5rem;
+            }
+
+            .modal-details-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            .quick-actions {
+                grid-template-columns: 1fr;
+            }
+
+            .property-details {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header class="header">
+    <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-home"></i>
+                    <span>PropAI</span>
+                </div>
+                <nav>
+                    <ul class="nav-links">
+                        <li><a href="#search">Search</a></li>
+                        <li><a href="#about">About</a></li>
+                        <li><a href="#contact">Contact</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <h1>Find Your Dream Property with AI</h1>
+            <p>Experience the future of real estate search with our intelligent AI-powered platform. Get instant insights, comparisons, and personalized recommendations.</p>
+        </div>
+    </section>
+
+    <!-- Search Section -->
+    <section class="search-section">
+        <div class="container">
+            <form id="search-form" class="search-form">
+                <input type="text" id="query" class="search-input" placeholder="Ask me anything about properties... e.g., 'Show me villas in Dubai Marina under 5 million AED'">
+                <button type="submit" class="search-btn">
+                    <i class="fas fa-search"></i>
+                    Search
+                </button>
+        </form>
+            
+            <div class="quick-actions">
+                <div class="quick-action" onclick="setQuickSearch('villas in Dubai Marina')">
+                    <i class="fas fa-home"></i>
+                    <span>Villas in Dubai Marina</span>
+                </div>
+                <div class="quick-action" onclick="setQuickSearch('apartments under 2 million AED')">
+                    <i class="fas fa-building"></i>
+                    <span>Affordable Apartments</span>
+                </div>
+                <div class="quick-action" onclick="setQuickSearch('compare prices in Palm Jumeirah vs Downtown Dubai')">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Price Comparison</span>
+                </div>
+                <div class="quick-action" onclick="setQuickSearch('how to buy property in UAE')">
+                    <i class="fas fa-question-circle"></i>
+                    <span>Buying Guide</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Results Section -->
+    <section class="results-section">
+        <div class="container">
+        <div id="results"></div>
+    </div>
+    </section>
+
+    <div id="propertyModal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="modal-close">&times;</span>
+            <div id="modal-details"></div>
+        </div>
+    </div>
+
+    <div id="galleryModal" class="modal-overlay">
+        <span id="galleryClose">&times;</span>
+        <img id="fullscreenImage" src="" alt="Full Screen Property Image">
+        <div id="galleryNavigation">
+            <button id="prevBtn" class="gallery-nav-btn">&lt;</button>
+            <button id="nextBtn" class="gallery-nav-btn">&gt;</button>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // DOM Element Caching
+        const form = document.getElementById('search-form');
+        const resultsDiv = document.getElementById('results');
+        console.log('resultsDiv found:', resultsDiv);
+        const modal = document.getElementById('propertyModal');
+        const modalDetails = document.getElementById('modal-details');
+        const galleryModal = document.getElementById('galleryModal');
+        const fullscreenImage = document.getElementById('fullscreenImage');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const modalCloseBtn = document.querySelector('.modal-close');
+        const galleryCloseBtn = document.getElementById('galleryClose');
+
+        // Global State
+        let currentImages = [];
+        let currentImageIndex = 0;
+        let mapInstance = null; // Store the map instance to prevent re-initializing
+
+        // --- Event Listeners ---
+        form.addEventListener('submit', handleSearchSubmit);
+        modalCloseBtn.addEventListener('click', closeModal);
+        window.addEventListener('click', handleWindowClick);
+        galleryCloseBtn.addEventListener('click', closeGallery);
+        galleryModal.addEventListener('click', handleGalleryWindowClick);
+        prevBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            showPrevImage();
+        });
+        nextBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            showNextImage();
+        });
+
+        // --- Main Functions ---
+
+        /**
+         * Sets a quick search query
+         * @param {string} query - The search query to set
+         */
+        function setQuickSearch(query) {
+            document.getElementById('query').value = query;
+            document.getElementById('query').focus();
+        }
+
+        /**
+         * Handles the search form submission.
+         * @param {Event} e - The submit event.
+         */
+        async function handleSearchSubmit(e) {
+            e.preventDefault();
+            const query = document.getElementById('query').value.trim();
+            if (!query) return;
+
+            resultsDiv.innerHTML = `
+                <div class="loading">
+                    <i class="fas fa-spinner"></i>
+                    <span>Searching with AI...</span>
+                </div>
+            `;
+
+            try {
+                // Try intelligent search first
+                const response = await fetch('/api/intelligent_search', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Intelligent agent response:', data);
+                    resultsDiv.innerHTML = '';
+                    renderIntelligentResults(data);
+                } else {
+                    // Fallback to regular search
+                    console.log('Intelligent search failed, falling back to regular search');
+                    const fallbackResponse = await fetch('/api/nl_search', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ query })
+                    });
+                    const data = await fallbackResponse.json();
+                    console.log('Fallback API Response:', data);
+                resultsDiv.innerHTML = '';
+                renderSearchResults(data);
+                }
+
+            } catch (error) {
+                console.error(error);
+                resultsDiv.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <h3>Oops! Something went wrong</h3>
+                        <p>We encountered an error while processing your request. Please try again.</p>
+                    </div>
+                `;
+            }
+        }
+
+        /**
+         * Renders intelligent agent results
+         * @param {object} data - The intelligent agent response
+         */
+        function renderIntelligentResults(data) {
+            const resultsDiv = document.getElementById('results');
+            
+            // Show agent understanding
+            const understandingDiv = document.createElement('div');
+            understandingDiv.className = 'ai-response';
+            
+            let understandingHTML = `
+                <h3><i class="fas fa-robot"></i> AI Agent Understanding</h3>
+                <div class="analysis-card">
+                    <p><strong>Intent:</strong> ${data.understanding.intent}</p>
+                    <p><strong>Confidence:</strong> ${(data.understanding.confidence * 100).toFixed(1)}%</p>
+                    <p><strong>Reasoning:</strong> ${data.understanding.reasoning}</p>
+                </div>
+            `;
+            
+            if (data.understanding.entities && Object.keys(data.understanding.entities).length > 0) {
+                understandingHTML += '<p><strong>Extracted Entities:</strong></p><ul>';
+                for (const [key, value] of Object.entries(data.understanding.entities)) {
+                    if (value && (Array.isArray(value) ? value.length > 0 : true)) {
+                        understandingHTML += `<li>${key}: ${Array.isArray(value) ? value.join(', ') : value}</li>`;
+                    }
+                }
+                understandingHTML += '</ul>';
+            }
+            
+            understandingDiv.innerHTML = understandingHTML;
+            resultsDiv.appendChild(understandingDiv);
+            
+            // Render the result based on intent
+            const result = data.result;
+            
+            if (result.intent === 'comparison') {
+                renderComparisonResult(result, resultsDiv);
+            } else if (result.intent === 'affordability') {
+                renderAffordabilityResult(result, resultsDiv);
+            } else if (result.intent === 'price_analysis') {
+                renderPriceAnalysisResult(result, resultsDiv);
+            } else if (result.intent === 'how_to_guide') {
+                renderGuideResult(result, resultsDiv);
+            } else if (result.intent === 'market_insights') {
+                renderMarketInsightsResult(result, resultsDiv);
+            } else if (result.intent === 'search_properties') {
+                renderPropertySearchResult(result, resultsDiv);
+            } else {
+                // Generic result rendering
+                const resultDiv = document.createElement('div');
+                resultDiv.className = 'agent-result';
+                resultDiv.style.cssText = `
+                    background: #f8f9fa;
+                    padding: 20px;
+                    border-radius: 10px;
+                    margin-bottom: 20px;
+                    border-left: 4px solid #007bff;
+                `;
+                resultDiv.innerHTML = `<h4>Result</h4><pre>${JSON.stringify(result, null, 2)}</pre>`;
+                resultsDiv.appendChild(resultDiv);
+            }
+        }
+        
+        function renderComparisonResult(result, resultsDiv) {
+            const comparisonDiv = document.createElement('div');
+            comparisonDiv.className = 'comparison-result';
+            comparisonDiv.style.cssText = `
+                background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+                color: white;
+                padding: 20px;
+                border-radius: 10px;
+                margin-bottom: 20px;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            `;
+            
+            let comparisonHTML = '<h3 style="margin-top: 0; color: #fff;">📊 Location Comparison</h3>';
+            
+            if (result.comparison_data) {
+                for (const [location, data] of Object.entries(result.comparison_data)) {
+                    comparisonHTML += `
+                        <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; margin: 10px 0;">
+                            <h4 style="color: #fff; margin-top: 0;">${location}</h4>
+                            <p><strong>Properties Found:</strong> ${data.count}</p>
+                            ${data.avg_price ? `<p><strong>Average Price:</strong> AED ${data.avg_price.toLocaleString()}</p>` : ''}
+                            ${data.min_price && data.max_price ? `<p><strong>Price Range:</strong> AED ${data.min_price.toLocaleString()} - AED ${data.max_price.toLocaleString()}</p>` : ''}
+                        </div>
+                    `;
+                }
+            }
+            
+            if (result.insights && result.insights.length > 0) {
+                comparisonHTML += '<div style="margin-top: 15px;"><h4 style="color: #fff;">Key Insights:</h4><ul>';
+                result.insights.forEach(insight => {
+                    comparisonHTML += `<li style="margin: 5px 0;">${insight}</li>`;
+                });
+                comparisonHTML += '</ul></div>';
+            }
+            
+            comparisonDiv.innerHTML = comparisonHTML;
+            resultsDiv.appendChild(comparisonDiv);
+            
+            // Show properties if available
+            if (result.all_properties && result.all_properties.length > 0) {
+                result.all_properties.forEach(prop => {
+                    const card = createPropertyCard(prop);
+                    resultsDiv.appendChild(card);
+                });
+                attachCardClickListeners();
+            }
+        }
+        
+        function renderAffordabilityResult(result, resultsDiv) {
+            const affordabilityDiv = document.createElement('div');
+            affordabilityDiv.className = 'affordability-result';
+            affordabilityDiv.style.cssText = `
+                background: linear-gradient(135deg, #00b894 0%, #00a085 100%);
+                color: white;
+                padding: 20px;
+                border-radius: 10px;
+                margin-bottom: 20px;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            `;
+            
+            let affordabilityHTML = '<h3 style="margin-top: 0; color: #fff;">💰 Affordability Analysis</h3>';
+            
+            if (result.analysis) {
+                affordabilityHTML += '<div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; margin: 10px 0;">';
+                for (const [key, value] of Object.entries(result.analysis)) {
+                    affordabilityHTML += `<p><strong>${key.replace('_', ' ').toUpperCase()}:</strong> ${value}</p>`;
+                }
+                affordabilityHTML += '</div>';
+            }
+            
+            if (result.insights && result.insights.length > 0) {
+                affordabilityHTML += '<div style="margin-top: 15px;"><h4 style="color: #fff;">Insights:</h4><ul>';
+                result.insights.forEach(insight => {
+                    affordabilityHTML += `<li style="margin: 5px 0;">${insight}</li>`;
+                });
+                affordabilityHTML += '</ul></div>';
+            }
+            
+            affordabilityDiv.innerHTML = affordabilityHTML;
+            resultsDiv.appendChild(affordabilityDiv);
+            
+            // Show properties if available
+            if (result.properties && result.properties.length > 0) {
+                result.properties.forEach(prop => {
+                    const card = createPropertyCard(prop);
+                    resultsDiv.appendChild(card);
+                });
+                attachCardClickListeners();
+            }
+        }
+        
+        function renderPriceAnalysisResult(result, resultsDiv) {
+            const priceDiv = document.createElement('div');
+            priceDiv.className = 'price-analysis-result';
+            priceDiv.style.cssText = `
+                background: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 100%);
+                color: white;
+                padding: 20px;
+                border-radius: 10px;
+                margin-bottom: 20px;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            `;
+            
+            let priceHTML = '<h3 style="margin-top: 0; color: #fff;">📈 Price Analysis</h3>';
+            
+            if (result.analysis) {
+                priceHTML += '<div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; margin: 10px 0;">';
+                for (const [key, value] of Object.entries(result.analysis)) {
+                    priceHTML += `<p><strong>${key.replace('_', ' ').toUpperCase()}:</strong> ${value}</p>`;
+                }
+                priceHTML += '</div>';
+            }
+            
+            if (result.insights && result.insights.length > 0) {
+                priceHTML += '<div style="margin-top: 15px;"><h4 style="color: #fff;">Insights:</h4><ul>';
+                result.insights.forEach(insight => {
+                    priceHTML += `<li style="margin: 5px 0;">${insight}</li>`;
+                });
+                priceHTML += '</ul></div>';
+            }
+            
+            priceDiv.innerHTML = priceHTML;
+            resultsDiv.appendChild(priceDiv);
+            
+            // Show properties if available
+            if (result.properties && result.properties.length > 0) {
+                result.properties.forEach(prop => {
+                    const card = createPropertyCard(prop);
+                    resultsDiv.appendChild(card);
+                });
+                attachCardClickListeners();
+            }
+        }
+        
+        function renderGuideResult(result, resultsDiv) {
+            const guideDiv = document.createElement('div');
+            guideDiv.className = 'guide-result';
+            guideDiv.style.cssText = `
+                background: linear-gradient(135deg, #fd79a8 0%, #e84393 100%);
+                color: white;
+                padding: 20px;
+                border-radius: 10px;
+                margin-bottom: 20px;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            `;
+            
+            let guideHTML = `<h3 style="margin-top: 0; color: #fff;">📚 ${result.guide.title}</h3>`;
+            
+            if (result.guide.steps) {
+                guideHTML += '<div style="margin: 15px 0;"><ol style="color: #f0f0f0;">';
+                result.guide.steps.forEach(step => {
+                    guideHTML += `<li style="margin: 8px 0;">${step}</li>`;
+                });
+                guideHTML += '</ol></div>';
+            }
+            
+            if (result.guide.additional_info) {
+                guideHTML += '<div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; margin: 10px 0;">';
+                for (const [key, value] of Object.entries(result.guide.additional_info)) {
+                    guideHTML += `<p><strong>${key.replace('_', ' ').toUpperCase()}:</strong> ${value}</p>`;
+                }
+                guideHTML += '</div>';
+            }
+            
+            guideDiv.innerHTML = guideHTML;
+            resultsDiv.appendChild(guideDiv);
+        }
+        
+        function renderMarketInsightsResult(result, resultsDiv) {
+            const marketDiv = document.createElement('div');
+            marketDiv.className = 'market-insights-result';
+            marketDiv.style.cssText = `
+                background: linear-gradient(135deg, #fdcb6e 0%, #e17055 100%);
+                color: white;
+                padding: 20px;
+                border-radius: 10px;
+                margin-bottom: 20px;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            `;
+            
+            let marketHTML = '<h3 style="margin-top: 0; color: #fff;">📊 Market Insights</h3>';
+            
+            if (result.insights && result.insights.length > 0) {
+                marketHTML += '<div style="margin: 15px 0;"><ul style="color: #f0f0f0;">';
+                result.insights.forEach(insight => {
+                    marketHTML += `<li style="margin: 5px 0;">${insight}</li>`;
+                });
+                marketHTML += '</ul></div>';
+            }
+            
+            if (result.market_data) {
+                marketHTML += '<div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; margin: 10px 0;">';
+                for (const [key, value] of Object.entries(result.market_data)) {
+                    if (typeof value === 'object') {
+                        marketHTML += `<p><strong>${key.replace('_', ' ').toUpperCase()}:</strong></p><ul>`;
+                        for (const [subKey, subValue] of Object.entries(value)) {
+                            marketHTML += `<li>${subKey}: ${subValue}</li>`;
+                        }
+                        marketHTML += '</ul>';
+                    } else {
+                        marketHTML += `<p><strong>${key.replace('_', ' ').toUpperCase()}:</strong> ${value}</p>`;
+                    }
+                }
+                marketHTML += '</div>';
+            }
+            
+            marketDiv.innerHTML = marketHTML;
+            resultsDiv.appendChild(marketDiv);
+            
+            // Show properties if available
+            if (result.properties && result.properties.length > 0) {
+                result.properties.forEach(prop => {
+                    const card = createPropertyCard(prop);
+                    resultsDiv.appendChild(card);
+                });
+                attachCardClickListeners();
+            }
+        }
+        
+        function renderPropertySearchResult(result, resultsDiv) {
+            if (result.properties && result.properties.length > 0) {
+                result.properties.forEach(prop => {
+                    const card = createPropertyCard(prop);
+                    resultsDiv.appendChild(card);
+                });
+                attachCardClickListeners();
+            } else {
+                resultsDiv.innerHTML = '<p>No properties found.</p>';
+            }
+        }
+
+        /**
+         * Renders the search results based on the API response.
+         * @param {object} data - The data object from the API.
+         */
+        function renderSearchResults(data) {
+            // Handle multi-part questions
+            if (data.is_multi_question) {
+                const chatbotResponseDiv = document.createElement('div');
+                chatbotResponseDiv.id = 'chatbot-response';
+                chatbotResponseDiv.className = 'analytical-response';
+                chatbotResponseDiv.style.cssText = `
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    padding: 20px;
+                    border-radius: 10px;
+                    margin-bottom: 20px;
+                    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+                `;
+                
+                let responseHTML = '<h3 style="margin-top: 0; color: #fff;">Here are your answers:</h3>';
+                
+                // Render each answer
+                data.answers.forEach((answer, index) => {
+                    responseHTML += `
+                        <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; margin: 10px 0;">
+                            <h4 style="color: #fff; margin-top: 0;">Question ${index + 1}: ${answer.query}</h4>
+                            <p>${answer.answer.text}</p>
+                    `;
+                    
+                    // Add specific details based on answer type
+                    if (answer.type === 'analytical' && answer.answer.analysis) {
+                        responseHTML += `<div style="margin-top: 10px;">`;
+                        for (const [key, value] of Object.entries(answer.answer.analysis)) {
+                            responseHTML += `<p><strong>${key.replace('_', ' ').toUpperCase()}:</strong> ${value}</p>`;
+                        }
+                        responseHTML += `</div>`;
+                    }
+                    
+                    responseHTML += `</div>`;
+                });
+                
+                chatbotResponseDiv.innerHTML = responseHTML;
+                resultsDiv.appendChild(chatbotResponseDiv);
+                
+                // Render combined property listings if any
+                if (data.combined_data && data.combined_data.length > 0) {
+                    console.log('Rendering combined', data.combined_data.length, 'properties');
+                    data.combined_data.forEach((prop, index) => {
+                        try {
+                            const card = createPropertyCard(prop);
+                            resultsDiv.appendChild(card);
+                        } catch (error) {
+                            console.error(`Error creating card ${index + 1}:`, error);
+                        }
+                    });
+                    attachCardClickListeners();
+                }
+                return;
+            }
+            
+            // Handle single questions
+            if (data.is_question) {
+                const chatbotResponseDiv = document.createElement('div');
+                chatbotResponseDiv.id = 'chatbot-response';
+                chatbotResponseDiv.className = 'analytical-response';
+                chatbotResponseDiv.style.cssText = `
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    padding: 20px;
+                    border-radius: 10px;
+                    margin-bottom: 20px;
+                    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+                `;
+                
+                let responseHTML = `<h3 style="margin-top: 0; color: #fff;">${data.answer.text}</h3>`;
+                
+                // Handle comparison questions
+                if (data.question_type === 'comparison_question' && data.answer.comparison) {
+                    responseHTML += `<div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; margin: 10px 0;">`;
+                    for (const [location, stats] of Object.entries(data.answer.comparison)) {
+                        responseHTML += `
+                            <div style="margin: 10px 0; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 5px;">
+                                <h4 style="color: #fff; margin-top: 0;">${location}</h4>
+                                <p><strong>Average Price:</strong> ${stats.average_price || 'N/A'}</p>
+                                <p><strong>Price Range:</strong> ${stats.price_range || 'N/A'}</p>
+                                <p><strong>Properties Found:</strong> ${stats.property_count || stats.count || 0}</p>
+                            </div>
+                        `;
+                    }
+                    responseHTML += `</div>`;
+                }
+                
+                // Handle different types of analytical responses
+                if (data.answer.analysis) {
+                    responseHTML += `<div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; margin: 10px 0;">`;
+                    for (const [key, value] of Object.entries(data.answer.analysis)) {
+                        responseHTML += `<p><strong>${key.replace('_', ' ').toUpperCase()}:</strong> ${value}</p>`;
+                    }
+                    responseHTML += `</div>`;
+                }
+                
+                if (data.answer.steps) {
+                    responseHTML += `<div style="margin: 15px 0;"><h4 style="color: #fff;">Steps:</h4><ol style="color: #f0f0f0;">`;
+                    data.answer.steps.forEach(step => {
+                        responseHTML += `<li style="margin: 8px 0;">${step}</li>`;
+                    });
+                    responseHTML += `</ol></div>`;
+                }
+                
+                if (data.answer.insights) {
+                    responseHTML += `<div style="margin: 15px 0;"><h4 style="color: #fff;">Insights:</h4><ul style="color: #f0f0f0;">`;
+                    data.answer.insights.forEach(insight => {
+                        responseHTML += `<li style="margin: 5px 0;">${insight}</li>`;
+                    });
+                    responseHTML += `</ul></div>`;
+                }
+                
+                if (data.answer.suggestions) {
+                    responseHTML += `<div style="margin: 15px 0;"><h4 style="color: #fff;">Suggestions:</h4><ul style="color: #f0f0f0;">`;
+                    data.answer.suggestions.forEach(suggestion => {
+                        responseHTML += `<li style="margin: 5px 0;">${suggestion}</li>`;
+                    });
+                    responseHTML += `</ul></div>`;
+                }
+                
+                if (data.answer.capabilities) {
+                    responseHTML += `<div style="margin: 15px 0;"><h4 style="color: #fff;">I can help with:</h4><ul style="color: #f0f0f0;">`;
+                    data.answer.capabilities.forEach(capability => {
+                        responseHTML += `<li style="margin: 5px 0;">${capability}</li>`;
+                    });
+                    responseHTML += `</ul></div>`;
+                }
+                
+                chatbotResponseDiv.innerHTML = responseHTML;
+                resultsDiv.appendChild(chatbotResponseDiv);
+                
+                // For questions, properties are in data.data
+                data = data.data;
+            }
+            console.log('Full response data:', data);
+            console.log('data type:', typeof data);
+            console.log('data.length:', data ? data.length : 'undefined');
+            console.log('data.properties:', data ? data.properties : 'undefined');
+
+            // Check for properties in either data (for questions) or data.properties (for searches)
+            const properties = data && data.length > 0 ? data : (data.properties && data.properties.length > 0 ? data.properties : []);
+            console.log('Final properties array:', properties);
+            
+            if (properties && properties.length > 0) {
+                console.log('Rendering', properties.length, 'properties');
+                properties.forEach((prop, index) => {
+                    try {
+                        console.log(`Creating card ${index + 1}:`, prop.title || prop.id);
+                        const card = createPropertyCard(prop);
+                        resultsDiv.appendChild(card);
+                        console.log(`Card ${index + 1} appended successfully`);
+                    } catch (error) {
+                        console.error(`Error creating card ${index + 1}:`, error);
+                    }
+                });
+                attachCardClickListeners();
+                console.log('All cards rendered, click listeners attached');
+            } else {
+                console.log('No properties to render, showing "No properties found"');
+                resultsDiv.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-search"></i>
+                        <h3>No properties found</h3>
+                        <p>Try adjusting your search criteria or browse our quick actions above.</p>
+                    </div>
+                `;
+            }
+        }
+
+        /**
+         * Creates a single property card DOM element.
+         * @param {object} prop - The property object.
+         * @returns {HTMLElement} The created property card.
+         */
+        function createPropertyCard(prop) {
+            const card = document.createElement('div');
+            card.className = 'property-card';
+            card.dataset.id = prop.id;
+            
+            const price = prop.price ? new Intl.NumberFormat('en-US', { 
+                style: 'currency', 
+                currency: 'AED', 
+                minimumFractionDigits: 0 
+            }).format(prop.price) : 'Price on Request';
+            
+            const imageUrl = prop.cover_photo_url || 'https://placehold.co/400x250?text=No+Image+Available';
+            
+            card.innerHTML = `
+                <div style="position: relative;">
+                    <img src="${imageUrl}" alt="Property Image" class="property-image" onerror="this.src='https://placehold.co/400x250?text=Image+Not+Available'">
+                    ${prop.purpose ? `<div class="property-badge">${prop.purpose}</div>` : ''}
+                </div>
+                <div class="property-content">
+                    <h3 class="property-title">${prop.title || 'Property for Sale'}</h3>
+                    <div class="property-price">${price}</div>
+                    <div class="property-details">
+                        ${prop.area ? `
+                            <div class="property-detail">
+                                <i class="fas fa-ruler-combined"></i>
+                                <span>${prop.area} sqft</span>
+                            </div>
+                        ` : ''}
+                        ${prop.rooms ? `
+                            <div class="property-detail">
+                                <i class="fas fa-bed"></i>
+                                <span>${prop.rooms} Bed</span>
+                            </div>
+                        ` : ''}
+                        ${prop.baths ? `
+                            <div class="property-detail">
+                                <i class="fas fa-bath"></i>
+                                <span>${prop.baths} Bath</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                    <div class="property-location">
+                        <i class="fas fa-map-marker-alt" style="color: var(--primary-color); margin-right: 0.5rem;"></i>
+                        ${prop.location_name || 'Location not specified'}
+                    </div>
+                    ${prop.agency_name ? `
+                        <div class="property-agency">
+                            <i class="fas fa-building" style="color: var(--text-light); margin-right: 0.5rem;"></i>
+                            ${prop.agency_name}
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+            return card;
+        }
+
+        /**
+         * Attaches click event listeners to all property cards.
+         */
+        function attachCardClickListeners() {
+            document.querySelectorAll('.property-card').forEach(card => {
+                card.addEventListener('click', async function() {
+                    const propertyId = this.dataset.id;
+                    modalDetails.innerHTML = '<p>Loading details...</p>';
+                    modal.classList.add('active');
+
+                    try {
+                        const response = await fetch(`/api/properties/${propertyId}`);
+                        if (!response.ok) {
+                            throw new Error('Property not found.');
+                        }
+                        const property = await response.json();
+                        renderModalDetails(property);
+                    } catch (error) {
+                        modalDetails.innerHTML = `<p style="color: #ff6b6b;">Error: ${error.message}</p>`;
+                    }
+                });
+            });
+        }
+
+        /**
+         * Renders the detailed view of a property inside the modal.
+         * @param {object} prop - The detailed property object.
+         */
+        function renderModalDetails(prop) {
+            const formattedPrice = prop.price ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'AED', minimumFractionDigits: 0 }).format(prop.price) : 'N/A';
+            const coverImageUrl = prop.cover_photo_url ? `/get_image?url=${encodeURIComponent(prop.cover_photo_url)}` : 'https://placehold.co/600x350?text=No+Image+Available';
+
+            currentImages = (prop.all_image_urls || []).map(url => `/get_image?url=${encodeURIComponent(url)}`);
+
+            modalDetails.innerHTML = `
+                <div class="modal-main-info">
+                    <h2>${prop.title || 'No Title'}</h2>
+                    <div>
+                        <p class="modal-price">${formattedPrice}</p>
+                        <p class="modal-location">Location: ${prop.location_name || 'N/A'}</p>
+                    </div>
+                </div>
+                <img id="popupCoverImage" src="${coverImageUrl}" alt="Property Cover Image" class="modal-cover-image" onerror="this.src='https://placehold.co/600x350?text=Image+Not+Available';">
+                <div class="modal-details-grid">
+                    <div class="modal-detail-item">
+                        <strong>Purpose</strong><span>${prop.purpose || 'N/A'}</span>
+                    </div>
+                    <div class="modal-detail-item">
+                        <strong>Completion Status</strong><span>${prop.completion_status || 'N/A'}</span>
+                    </div>
+                    <div class="modal-detail-item">
+                        <strong>Area</strong><span>${prop.area ? `${prop.area} sqft` : 'N/A'}</span>
+                    </div>
+                    <div class="modal-detail-item">
+                        <strong>Rooms</strong><span>${prop.rooms ?? 'N/A'}</span>
+                    </div>
+                    <div class="modal-detail-item">
+                        <strong>Baths</strong><span>${prop.baths ?? 'N/A'}</span>
+                    </div>
+                    <div class="modal-detail-item">
+                        <strong>Down Payment</strong><span>${prop.down_payment_percentage ? `${prop.down_payment_percentage}%` : 'N/A'}</span>
+                    </div>
+                </div>
+                <a href="/map_view?lat=${prop.latitude}&lng=${prop.longitude}" target="_blank" class="location-button" style="text-decoration: none;">View on Map</a>
+                <div class="modal-contact-section">
+                    <div class="modal-agency-info">
+                        <h3>Agency Details</h3>
+                        <p>${prop.agency_name || 'N/A'}</p>
+                    </div>
+                    <div class="modal-agent-info">
+                        <h3>Contact Person</h3>
+                        <p><strong>Name:</strong> ${prop.contact_name || 'N/A'}</p>
+                        <p><strong>Mobile:</strong> ${prop.mobile_number || 'N/A'}</p>
+                        <p><strong>WhatsApp:</strong> ${prop.whatsapp_number || 'N/A'}</p>
+                    </div>
+                </div>
+            `;
+            document.getElementById('popupCoverImage').addEventListener('click', openFullscreenGallery);
+        }
+
+        // --- Modal Functions ---
+        function closeModal() {
+            modal.classList.remove('active');
+            if (mapInstance) {
+                mapInstance.remove();
+                mapInstance = null;
+            }
+        }
+        function handleWindowClick(e) {
+            if (e.target === modal) {
+                closeModal();
+            }
+        }
+
+        // --- Gallery Functions ---
+        function openFullscreenGallery() {
+            if (currentImages.length === 0) {
+                const coverImageUrl = document.getElementById('popupCoverImage').src;
+                fullscreenImage.src = coverImageUrl;
+                galleryModal.classList.add('active');
+                document.getElementById('galleryNavigation').style.display = 'none';
+                return;
+            }
+            const coverImageUrl = document.getElementById('popupCoverImage').src;
+            currentImageIndex = currentImages.findIndex(url => url === coverImageUrl);
+            if (currentImageIndex === -1) {
+                currentImageIndex = 0;
+            }
+            updateFullscreenImage();
+            galleryModal.classList.add('active');
+            document.getElementById('galleryNavigation').style.display = 'flex';
+        }
+        function updateFullscreenImage() {
+            fullscreenImage.src = currentImages[currentImageIndex];
+        }
+        function showNextImage() {
+            currentImageIndex = (currentImageIndex + 1) % currentImages.length;
+            updateFullscreenImage();
+        }
+        function showPrevImage() {
+            currentImageIndex = (currentImageIndex - 1 + currentImages.length) % currentImages.length;
+            updateFullscreenImage();
+        }
+        function closeGallery() {
+            galleryModal.classList.remove('active');
+        }
+        function handleGalleryWindowClick(e) {
+            if (e.target === galleryModal) {
+                closeGallery();
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,180 @@
+# /project_root/app.py - REVISED
+from flask import Flask, request, jsonify, send_file, abort
+import requests
+import json
+import io
+import math
+import database
+from updater import AlgoliaUpdater, _fetch_algolia_page
+
+app = Flask(__name__)
+app.config['DATABASE'] = 'bayut_properties.db'
+app.config['DEBUG'] = True
+
+database.init_app(app)
+
+updater = None
+with app.app_context():
+    database.init_db()
+    updater = AlgoliaUpdater(app)
+    updater.update_database() # Force initial DB population
+    updater.start_background_task(interval_minutes=60)
+
+@app.route('/')
+def index():
+    return jsonify({"message": "Welcome to the Bayut Properties API. Use /api/properties for data."})
+
+@app.route('/api/properties', methods=['GET'])
+def api_properties():
+    # Pagination parameters
+    page = request.args.get('page', 1, type=int)
+    limit = request.args.get('limit', 10, type=int)
+    offset = (page - 1) * limit
+
+    # Filtering parameters
+    purpose = request.args.get('purpose', type=str)
+    rooms = request.args.get('rooms', type=int)
+    baths = request.args.get('baths', type=int)
+    min_price = request.args.get('min_price', type=int)
+    max_price = request.args.get('max_price', type=int)
+
+    # --- THE NEW LOGIC IS HERE ---
+    db_count = database.get_all_properties_count()
+    if db_count == 0:
+        print("Database is empty. Serving live from Algolia API for this request.")
+        # We're building a simple filter payload here, but you can extend this
+        # to include rooms, baths, etc., if needed.
+        filters_payload = purpose if purpose else "for-sale"
+        
+        properties, total_pages_algolia = _fetch_algolia_page(
+            page=page - 1, # Algolia pages are 0-indexed
+            hits_per_page=limit,
+            filters_payload=filters_payload
+        )
+        total_properties_algolia = total_pages_algolia * limit
+
+        return jsonify({
+            'properties': properties,
+            'page': page,
+            'limit': limit,
+            'total_properties': total_properties_algolia,
+            'total_pages': total_pages_algolia
+        })
+    # --- END NEW LOGIC ---
+
+    # If the database is not empty, use the local database as normal
+    db = database.get_db()
+    cursor = db.cursor()
+
+    where_clauses = []
+    params = []
+
+    if purpose:
+        where_clauses.append("purpose = ?")
+        params.append(purpose)
+    if rooms is not None:
+        where_clauses.append("rooms = ?")
+        params.append(rooms)
+    if baths is not None:
+        where_clauses.append("baths = ?")
+        params.append(baths)
+    if min_price is not None:
+        where_clauses.append("price >= ?")
+        params.append(min_price)
+    if max_price is not None:
+        where_clauses.append("price <= ?")
+        params.append(max_price)
+
+    where_string = " AND ".join(where_clauses) if where_clauses else "1=1"
+
+    count_query = f"SELECT COUNT(*) FROM properties WHERE {where_string}"
+    cursor.execute(count_query, params)
+    total_properties = cursor.fetchone()[0]
+
+    properties_query = f"SELECT * FROM properties WHERE {where_string} LIMIT ? OFFSET ?"
+    params.extend([limit, offset])
+    cursor.execute(properties_query, params)
+    properties_raw = cursor.fetchall()
+
+    properties_processed = []
+    for prop_row in properties_raw:
+        prop_dict = dict(prop_row)
+        if prop_dict['all_image_urls']:
+            prop_dict['all_image_urls'] = prop_dict['all_image_urls'].split(',')
+        else:
+            prop_dict['all_image_urls'] = []
+        properties_processed.append(prop_dict)
+
+    total_pages = math.ceil(total_properties / limit) if total_properties > 0 else 1
+
+    return jsonify({
+        'properties': properties_processed,
+        'page': page,
+        'limit': limit,
+        'total_properties': total_properties,
+        'total_pages': total_pages
+    })
+
+@app.route('/api/properties/<int:property_id>', methods=['GET'])
+def api_property_detail(property_id):
+    property_dict = database.get_property_details_by_id(property_id)
+    if property_dict is None:
+        return jsonify({"error": "Property not found."}), 404
+    return jsonify(property_dict)
+
+@app.route('/api/map_data', methods=['POST'])
+def api_map_data():
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "Invalid JSON data"}), 400
+    north = data.get('north')
+    east = data.get('east')
+    south = data.get('south')
+    west = data.get('west')
+    if not all([north, east, south, west]):
+        return jsonify({"error": "Missing geographical bounds (north, east, south, west)"}), 400
+    db = database.get_db()
+    cursor = db.cursor()
+    query = "SELECT * FROM properties WHERE latitude <= ? AND latitude >= ? AND longitude <= ? AND longitude >= ?"
+    cursor.execute(query, (north, south, east, west))
+    properties_raw = cursor.fetchall()
+    properties_for_map = []
+    for prop_row in properties_raw:
+        prop_dict = dict(prop_row)
+        try:
+            prop_dict['latitude'] = float(prop_dict['latitude'])
+            prop_dict['longitude'] = float(prop_dict['longitude'])
+            if 'all_image_urls' in prop_dict and prop_dict['all_image_urls']:
+                prop_dict['all_image_urls'] = prop_dict['all_image_urls'].split(',')
+            else:
+                prop_dict['all_image_urls'] = []
+            properties_for_map.append(prop_dict)
+        except (ValueError, TypeError) as e:
+            print(f"Skipping property {prop_dict.get('id')} due to invalid lat/lng: {e}")
+            continue
+    return jsonify(properties_for_map)
+
+@app.route('/get_image')
+def get_image():
+    image_url = request.args.get('url')
+    allowed_image_prefixes = [
+        'https://images.bayut.com/thumbnails/',
+        'https://bayut-production.s3.eu-central-1.amazonaws.com/image/'
+    ]
+    is_valid_prefix = any(image_url and image_url.startswith(prefix) for prefix in allowed_image_prefixes)
+    if not is_valid_prefix:
+        return "Invalid image URL", 400
+    try:
+        response = requests.get(image_url, headers={'Referer': 'https://www.bayut.com/'}, timeout=10)
+        response.raise_for_status()
+        content_type = response.headers.get('Content-Type', 'application/octet-stream')
+        return send_file(io.BytesIO(response.content), mimetype=content_type)
+    except requests.exceptions.Timeout:
+        return "Image fetch timed out", 408
+    except requests.exceptions.RequestException as e:
+        return "Image not found or forbidden", 404
+    except Exception as e:
+        return "Internal server error", 500
+
+if __name__ == '__main__':
+    app.run(debug=True)

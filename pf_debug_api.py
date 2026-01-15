@@ -350,7 +350,7 @@ def gemini_search():
         ]
 
         model = genai.GenerativeModel(
-            model_name="models/gemini-2.5-pro",
+            model_name="models/gemini-2.5-flash-lite",
             system_instruction=(
                 "You are an expert UAE real estate agent AI assistant. "
                 "CRITICAL INSTRUCTIONS:\n"

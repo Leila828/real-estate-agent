@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <title>Property Location Map</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <style>
+        html, body, #map {
+          margin: 0;
+          padding: 0;
+          height: 100%;
+          width: 100%;
+        }
+    </style>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body>
+<div id="map"></div>
+
+<script>
+    // Get coordinates from Flask's Jinja2 template variables
+    const lat = {{ lat | tojson }};
+    const lng = {{ lng | tojson }};
+
+    // Initialize map and center on the coordinates
+    const map = L.map("map").setView([lat, lng], 17);
+
+    // --- CRITICAL CHANGE: Use Esri's satellite tile layer ---
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+      maxZoom: 19
+    }).addTo(map);
+
+    // Add a marker at the property's location
+    L.marker([lat, lng]).addTo(map)
+        .bindPopup("Property Location").openPopup();
+</script>
+</body>
+</html>
